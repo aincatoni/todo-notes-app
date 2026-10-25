@@ -324,8 +324,9 @@ A continuación se documenta el ciclo de desarrollo completo mediante el registr
 #### Registro en Video de la Aplicación en Ejecución
 Se incluye la grabación de pantalla directa desde el iPhone evidenciando la fluidez, la apertura de modales, la edición, eliminación con alerta nativa y persistencia:
 
-* 🎬 **Video demostrativo:** [Ver Video Demostrativo (demo-video.mp4)](Capturas/demo-video.mp4)
-
+* 📱 **Video Demostrativo en iPhone (YouTube):** [https://youtube.com/shorts/k3e_sxzy7Bc](https://youtube.com/shorts/k3e_sxzy7Bc)
+* 🎙️ **Video Explicativo / Defensa Técnica (YouTube):** *(Enlace disponible una vez grabado)*
+* 💾 **Archivo de Respaldo Local:** [Capturas/demo-video.mp4](Capturas/demo-video.mp4)
 ---
 
 #### Vista General de la Aplicación (iPhone / Expo Go SDK 58)
