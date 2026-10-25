@@ -324,9 +324,9 @@ A continuación se documenta el ciclo de desarrollo completo mediante el registr
 La aplicación fue desplegada en un iPhone físico enlazado mediante la función de duplicación en macOS:
 
 <p align="center">
-  <img src="Capturas/07.png" alt="Duplicación de iPhone ejecutando la aplicación" width="800" />
+  <img src="Capturas/07.png" alt="Pantalla principal de la aplicación en iPhone" width="280" />
   <br/>
-  <em>Captura 07: Aplicación To-Do ejecutándose en tiempo real en iPhone mediante Expo Go SDK 58.</em>
+  <em>Captura 07: Aplicación To-Do ejecutándose en tiempo real en iPhone mediante Expo Go SDK 58 (Cabecera oficial IPSS 2026).</em>
 </p>
 
 ---
