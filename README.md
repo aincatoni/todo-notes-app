@@ -298,20 +298,46 @@ bun start
 
 ## 9. EVIDENCIAS DEL PROCESO Y CAPTURAS DE PANTALLA
 
-A continuación se registran las evidencias fotográficas del proceso de configuración del entorno y ejecución:
+A continuación se documenta el ciclo de desarrollo completo mediante el registro fotográfico de la preparación del entorno, compilación y validación funcional en el dispositivo iPhone (mediante Duplicación de iPhone / Expo Go SDK 58):
 
-### 9.1. Preparación del Entorno en Terminal
-| Evidencia | Descripción | Archivo de Captura |
-| :--- | :--- | :--- |
-| **01** | Inicio de configuración e invocación de Homebrew para Watchman. | `Capturas/01.png` |
-| **02** | Descarga e instalación de Watchman y librerías auxiliares. | `Capturas/02.png` |
-| **03** | Autenticación y verificación de cuenta en Expo CLI. | `Capturas/03.png` |
-| **04** | Creación del proyecto con Bun (`3.73s`) y selección de SDK 58. | `Capturas/04.png` |
+### 9.1. Preparación del Entorno de Desarrollo y CLI
 
-### 9.2. Capturas de la Aplicación en Funcionamiento
-* **Pantalla Principal y Filtros:** Muestra la lista de notas activas, estados pendientes y conteo en tiempo real.
-* **Modal de Creación / Edición:** Formulario con validación activa y auto-limpieza de campos.
-* **Eliminación Segura:** Diálogo de alerta nativo solicitando confirmación del usuario.
+| # | Fase / Acción | Descripción Técnica | Captura |
+| :---: | :--- | :--- | :---: |
+| **01** | Instalación de Watchman | Invocación de Homebrew para instalar el monitor de archivos requerido por Metro. | [Ver Captura](Capturas/01.png) |
+| **02** | Dependencias de Watchman | Descarga e instalación de librerías nativas (`folly`, `edencommon`, `pcre2`). | [Ver Captura](Capturas/02.png) |
+| **03** | Autenticación Expo CLI | Inicio de sesión interactivo en la cuenta de Expo vía `npx expo login`. | [Ver Captura](Capturas/03.png) |
+| **04** | Creación del Proyecto | Inicialización con `bun create expo` seleccionando la plantilla TypeScript y SDK 58 en 3.73s. | [Ver Captura](Capturas/04.png) |
+| **05** | Configuración de Repositorio | Navegación a `todo-notes-app` y verificación del estado del repositorio Git. | [Ver Captura](Capturas/05.png) |
+| **06** | Servidor Metro Bundler | Ejecución de `bun start` desplegando el código QR para vinculación con Expo Go. | [Ver Captura](Capturas/06.png) |
+
+---
+
+### 9.2. Demostración Funcional en Dispositivo Móvil (iPhone iOS / Expo Go)
+
+#### Vista General de la Aplicación en Ejecución
+La aplicación fue desplegada en un iPhone físico enlazado mediante la función de duplicación en macOS:
+
+<p align="center">
+  <img src="Capturas/07.png" alt="Duplicación de iPhone ejecutando la aplicación" width="800" />
+  <br/>
+  <em>Captura 07: Aplicación To-Do ejecutándose en tiempo real en iPhone mediante Expo Go SDK 58.</em>
+</p>
+
+---
+
+#### Validación del Ciclo CRUD y Funcionalidades
+
+| Operación Evaluada | Captura | Descripción del Comportamiento Observable |
+| :--- | :---: | :--- |
+| **Editar Tarea (Formulario)** | <img src="Capturas/08.png" width="220" /> | Modal emergente con datos precargados (`title` y `description`), contador de caracteres y botón "Actualizar". |
+| **Tarea Editada y Completada** | <img src="Capturas/09.png" width="220" /> | Lista actualizada con el badge `• editado`, título tachado y contador de pendientes decrementado a 1. |
+| **Crear Tarea (Formulario)** | <img src="Capturas/10.png" width="220" /> | Modal "Nueva Tarea" con campos limpios y foco activo para registrar una nueva nota. |
+| **Inserción Exitosa en Lista** | <img src="Capturas/11.png" width="220" /> | La nueva tarea aparece en la cabecera de la lista, actualizando el total a 4 tareas (2 pendientes). |
+| **Eliminación con Diálogo Nativo** | <img src="Capturas/12.png" width="220" /> | Confirmación de seguridad mediante `Alert.alert` nativo de iOS evitando eliminaciones accidentales. |
+| **Lista tras Eliminación** | <img src="Capturas/13.png" width="220" /> | Tarea de prueba removida de memoria y `AsyncStorage`, restableciendo el contador total a 3. |
+| **Filtro: Solo Pendientes** | <img src="Capturas/14.png" width="220" /> | Pestaña "Pendientes (1)" activa, aislando las tareas que aún requieren atención. |
+| **Filtro: Solo Completadas** | <img src="Capturas/15.png" width="220" /> | Pestaña "Completadas (2)" activa, desplegando exclusivamente las tareas finalizadas con estilo atenuado. |
 
 ---
 
