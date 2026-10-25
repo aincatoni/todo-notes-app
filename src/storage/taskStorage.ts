@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Task } from '../types/task';
 
-const STORAGE_KEY = '@ciisa_todo_app:tasks_v1';
+const STORAGE_KEY = '@ipss_todo_app:tasks_v1';
+const LEGACY_STORAGE_KEY = '@ciisa_todo_app:tasks_v1';
 
 const INITIAL_TASKS: Task[] = [
   {
@@ -30,7 +31,14 @@ const INITIAL_TASKS: Task[] = [
 export const taskStorage = {
   async getTasks(): Promise<Task[]> {
     try {
-      const data = await AsyncStorage.getItem(STORAGE_KEY);
+      let data = await AsyncStorage.getItem(STORAGE_KEY);
+      if (!data) {
+        const legacyData = await AsyncStorage.getItem(LEGACY_STORAGE_KEY);
+        if (legacyData) {
+          data = legacyData;
+          await AsyncStorage.setItem(STORAGE_KEY, legacyData);
+        }
+      }
       if (!data) {
         // Primera ejecución: guardar e inicializar tareas semilla
         await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_TASKS));

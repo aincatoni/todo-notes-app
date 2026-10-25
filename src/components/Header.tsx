@@ -16,7 +16,7 @@ export const Header: React.FC<HeaderProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.textContainer}>
-        <Text style={styles.badgeText}>EVA1 • CIISA 2026</Text>
+        <Text style={styles.badgeText}>EVA1 • IPSS 2026</Text>
         <Text style={styles.title}>Mis Notas y Tareas</Text>
         <Text style={styles.subtitle}>
           {pendingCount === 0

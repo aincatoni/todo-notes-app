@@ -4,7 +4,7 @@
 ---
 
 ### DATOS DE IDENTIFICACIÓN
-* **Institución:** Instituto Profesional CIISA
+* **Institución:** Instituto Profesional San Sebastián (IPSS)
 * **Carrera:** Ingeniería en Conectividad y Redes / Informática
 * **Asignatura:** Desarrollo de Aplicaciones Móviles
 * **Unidad Temática:** Unidad 1 – Introducción al Desarrollo Móvil y Frameworks Multiplataforma
@@ -147,7 +147,7 @@ La interfaz fue construida siguiendo los estándares de diseño contemporáneos 
 
 ```
 +-------------------------------------------------------------+
-| [EVA1 • CIISA 2026]                                         | <- Tag jerárquico secundario
+| [EVA1 • IPSS 2026]                                          | <- Tag jerárquico secundario
 | Mis Notas y Tareas                       [+ Nueva] (Primario)| <- H1 prominente + Botón acento
 | 2 pendientes de 3                                           | <- Subtítulo informativo
 +-------------------------------------------------------------+
@@ -223,7 +223,7 @@ La aplicación integra de forma robusta todos los requerimientos obligatorios de
      * Si no hay tareas completadas: orienta sobre cómo marcar una tarea.
      * Si la búsqueda no arroja resultados: ofrece un botón para limpiar el texto buscado.
 4. **Persistencia Local y Resiliencia:**
-   * Los datos se almacenan en el almacenamiento local del dispositivo mediante `AsyncStorage` bajo la clave `@ciisa_todo_app:tasks_v1`. Al cerrar o reiniciar la aplicación, los datos se preservan intactos.
+   * Los datos se almacenan en el almacenamiento local del dispositivo mediante `AsyncStorage` bajo la clave `@ipss_todo_app:tasks_v1`. Al cerrar o reiniciar la aplicación, los datos se preservan intactos.
    * Se incluye un mecanismo de inicialización controlada (*seed data*) con tareas demostrativas al ejecutar por primera vez.
 
 ---
@@ -293,6 +293,11 @@ bun start
    ```bash
    bun run tsc --noEmit
    ```
+5. **Ejecución de Pruebas Unitarias Automatizadas (TDD):**
+   ```bash
+   bun test
+   ```
+   *Ejecuta 13 pruebas unitarias en ~10ms validando la lógica completa de creación, validación, mutación inmutable, filtros y estadísticas.*
 
 ---
 
