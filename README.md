@@ -305,7 +305,7 @@ bun start
 
 A continuación se documenta el ciclo de desarrollo completo mediante el registro fotográfico de la preparación del entorno, compilación y validación funcional en el dispositivo iPhone (mediante Duplicación de iPhone / Expo Go SDK 58):
 
-### 9.1. Preparación del Entorno de Desarrollo y CLI
+### 9.1. Preparación del Entorno de Desarrollo, CLI y Pruebas TDD
 
 | # | Fase / Acción | Descripción Técnica | Captura |
 | :---: | :--- | :--- | :---: |
@@ -315,13 +315,20 @@ A continuación se documenta el ciclo de desarrollo completo mediante el registr
 | **04** | Creación del Proyecto | Inicialización con `bun create expo` seleccionando la plantilla TypeScript y SDK 58 en 3.73s. | [Ver Captura](Capturas/04.png) |
 | **05** | Configuración de Repositorio | Navegación a `todo-notes-app` y verificación del estado del repositorio Git. | [Ver Captura](Capturas/05.png) |
 | **06** | Servidor Metro Bundler | Ejecución de `bun start` desplegando el código QR para vinculación con Expo Go. | [Ver Captura](Capturas/06.png) |
+| **16** | Ejecución Suite TDD | Ejecución de `bun test` validando las 13 pruebas unitarias automatizadas con 0 fallos. | [Ver Captura](Capturas/16.png) |
 
 ---
 
-### 9.2. Demostración Funcional en Dispositivo Móvil (iPhone iOS / Expo Go)
+### 9.2. Demostración en Video y Funcionamiento en Dispositivo Móvil
 
-#### Vista General de la Aplicación en Ejecución
-La aplicación fue desplegada en un iPhone físico enlazado mediante la función de duplicación en macOS:
+#### Registro en Video de la Aplicación en Ejecución
+Se incluye la grabación de pantalla directa desde el iPhone evidenciando la fluidez, la apertura de modales, la edición, eliminación con alerta nativa y persistencia:
+
+* 🎬 **Video demostrativo:** [Ver Video Demostrativo (demo-video.mp4)](Capturas/demo-video.mp4)
+
+---
+
+#### Vista General de la Aplicación (iPhone / Expo Go SDK 58)
 
 <p align="center">
   <img src="Capturas/07.png" alt="Pantalla principal de la aplicación en iPhone" width="280" />
@@ -331,7 +338,7 @@ La aplicación fue desplegada en un iPhone físico enlazado mediante la función
 
 ---
 
-#### Validación del Ciclo CRUD y Funcionalidades
+#### Validación del Ciclo CRUD Principal
 
 | Operación Evaluada | Captura | Descripción del Comportamiento Observable |
 | :--- | :---: | :--- |
@@ -343,6 +350,17 @@ La aplicación fue desplegada en un iPhone físico enlazado mediante la función
 | **Lista tras Eliminación** | <img src="Capturas/13.png" width="220" /> | Tarea de prueba removida de memoria y `AsyncStorage`, restableciendo el contador total a 3. |
 | **Filtro: Solo Pendientes** | <img src="Capturas/14.png" width="220" /> | Pestaña "Pendientes (1)" activa, aislando las tareas que aún requieren atención. |
 | **Filtro: Solo Completadas** | <img src="Capturas/15.png" width="220" /> | Pestaña "Completadas (2)" activa, desplegando exclusivamente las tareas finalizadas con estilo atenuado. |
+
+---
+
+### 9.3. Validación de Errores, Robustez y Flexibilidad de UI
+
+| Escenario de Prueba | Captura | Comportamiento y Principio de Usabilidad Demostrado |
+| :--- | :---: | :--- |
+| **Prevención de Error al Crear** | <img src="Capturas/17.png" width="220" /> | Banner de error reactivo *"El título de la tarea es obligatorio"* al intentar guardar sin título. Evita registros vacíos. |
+| **Flexibilidad de Entrada (Sin descripción)** | <img src="Capturas/18.png" width="220" /> | Permite registrar tareas rápidas ingresando solo el título. |
+| **Adaptabilidad Visual de Tarjeta** | <img src="Capturas/19.png" width="220" /> | La tarjeta se ajusta estéticamente sin espacios vacíos innecesarios cuando no hay descripción. |
+| **Prevención de Error al Editar** | <img src="Capturas/20.png" width="220" /> | Si el usuario borra el título en modo edición y presiona "Actualizar", el sistema rechaza la operación e indica el error. |
 
 ---
 
