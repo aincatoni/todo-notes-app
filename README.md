@@ -57,7 +57,7 @@ React Native es un marco de desarrollo móvil multiplataforma que permite compil
 ```
 
 ### 2.1. Arquitectura de Nueva Generación (Fabric & TurboModules en SDK 58)
-A diferencia de las versiones históricas de React Native que dependían de un "puente asíncrono serializado en JSON" (The Bridge) —el cual introducía cuellos de botella en listas con gran densidad de datos—, **Expo SDK 58** ejecuta la **Nueva Arquitectura por defecto**:
+A diferencia de las versiones históricas de React Native que dependían de un "puente asíncrono serializado en JSON" (The Bridge), el cual introducía cuellos de botella en listas con gran densidad de datos, **Expo SDK 58** ejecuta la **Nueva Arquitectura por defecto**:
 1. **JavaScript Interface (JSI):** Enlace directo en C++ entre el hilo de JavaScript y el entorno nativo del host, permitiendo llamadas síncronas de memoria compartida sin serialización de cadenas JSON.
 2. **Fabric Renderer:** Sistema de renderizado en C++ que unifica la creación de árboles de componentes nativos, posibilitando transiciones visuales inmediatas y renderizado concurrente de React 19.
 3. **TurboModules:** Carga perezosa (*lazy loading*) de módulos nativos del dispositivo (sensores, almacenamiento, hápticos), mejorando el tiempo de arranque de la aplicación.
