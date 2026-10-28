@@ -8,8 +8,8 @@
 * **Carrera:** Ingeniería en Conectividad y Redes / Informática
 * **Asignatura:** Desarrollo de Aplicaciones Móviles
 * **Unidad Temática:** Unidad 1 – Introducción al Desarrollo Móvil y Frameworks Multiplataforma
-* **Docente:** Profesor de la Asignatura
-* **Estudiante(s):** Ain Catoni
+* **Docente:** Boris Belmar
+* **Estudiante(s):** Ain Catoni - Pía Alarcón
 * **Año Lectivo:** 2026
 
 ---
