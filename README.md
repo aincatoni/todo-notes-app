@@ -328,8 +328,18 @@ Se incluye la grabación de pantalla directa desde el iPhone evidenciando la flu
 * 🎙️ **Video Explicativo / Defensa Técnica (YouTube):** *(Enlace disponible una vez grabado)*
 * 💾 **Archivo de Respaldo Local:** [Capturas/demo-video.mp4](Capturas/demo-video.mp4)
 ---
+#### Demostración Multiplataforma Simultánea (Android + iOS)
+Evidencia directa de la capacidad multiplataforma de React Native y Expo SDK 58, ejecutando exactamente la misma base de código TypeScript en ambos ecosistemas operativos en paralelo:
 
-#### Vista General de la Aplicación (iPhone / Expo Go SDK 58)
+<p align="center">
+  <img src="Capturas/21.png" alt="Ejecución simultánea en Android e iOS" width="750" />
+  <br/>
+  <em>Captura 21: Emulador Android (Android Studio API 37) y dispositivo iPhone (iOS) ejecutando la aplicación simultáneamente con interfaz adaptativa nativa.</em>
+</p>
+
+---
+
+#### Vista Individual de la Aplicación (iPhone / Expo Go SDK 58)
 
 <p align="center">
   <img src="Capturas/07.png" alt="Pantalla principal de la aplicación en iPhone" width="280" />

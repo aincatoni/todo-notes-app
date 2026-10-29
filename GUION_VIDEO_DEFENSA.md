@@ -8,10 +8,9 @@
 ---
 
 ## 🖥️ PREPARACIÓN DE PANTALLA ANTES DE GRABAR
-* **Lado izquierdo:** Visual Studio Code con el proyecto abierto (`useTasks.ts`, `taskStorage.ts`) y la terminal integrada.
-* **Lado derecho:** Ventana de **Duplicación del iPhone** (con la app corriendo en Expo Go).
+* **Opción A (Recomendada):** Lado izquierdo: **Emulador Android (Android Studio)**. Lado derecho: **Duplicación del iPhone**.
+* **Opción B:** Lado izquierdo: **VS Code** (código y terminal `bun test`). Lado derecho: **iPhone**.
 * **Esquina inferior derecha:** Ventana de cámara flotante de QuickTime (con `Visualización > Flotar encima de todo`).
-
 ---
 
 ## ⏱️ ESTRUCTURA Y TEXTO DEL GUION
@@ -38,9 +37,11 @@
 
 ---
 
-### BLOQUE 3: Demostración Funcional en Vivo (1:45 – 3:00)
-> **Qué mostrar en pantalla:** Interactuar directamente con la app en la ventana de Duplicación del iPhone.
+### BLOQUE 3: Demostración Funcional en Vivo y Multiplataforma (1:45 – 3:00)
+> **Qué mostrar en pantalla:** Interactuar con la app en el iPhone y resaltar la ejecución paralela en Android.
 
+> **Frase de impacto multiplataforma:**
+> *"Un punto central exigido en la asignatura es la interoperabilidad multiplataforma. Como pueden apreciar en pantalla, tenemos exactamente el mismo código TypeScript ejecutándose en paralelo: a la izquierda en un emulador de Android (API 37 en Android Studio) y a la derecha en un iPhone físico con iOS. Ambos sistemas renderizan la interfaz y el teclado de forma nativa sin duplicar código."*
 **Pasos y texto a exponer:**
 
 1. **Creación con Prevención de Errores (Usabilidad):**
