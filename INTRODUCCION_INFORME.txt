@@ -12,7 +12,7 @@ El objetivo de esta implementación es demostrar el dominio de los conceptos fun
 
 Repositorio en GitHub: https://github.com/aincatoni/todo-notes-app
 Video Demostrativo en iPhone (YouTube): https://youtube.com/shorts/k3e_sxzy7Bc
-Video Explicativo / Defensa Técnica (YouTube): [Pega aquí el enlace de tu video de defensa]
+Video Explicativo / Defensa Técnica (YouTube): https://youtu.be/deRYQaMxEqs
 
 
 En este repositorio encontrarás:

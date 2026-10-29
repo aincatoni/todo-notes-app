@@ -325,7 +325,7 @@ A continuación se documenta el ciclo de desarrollo completo mediante el registr
 Se incluye la grabación de pantalla directa desde el iPhone evidenciando la fluidez, la apertura de modales, la edición, eliminación con alerta nativa y persistencia:
 
 * 📱 **Video Demostrativo en iPhone (YouTube):** [https://youtube.com/shorts/k3e_sxzy7Bc](https://youtube.com/shorts/k3e_sxzy7Bc)
-* 🎙️ **Video Explicativo / Defensa Técnica (YouTube):** *(Enlace disponible una vez grabado)*
+* 🎙️ **Video Explicativo / Defensa Técnica (YouTube):** [https://youtu.be/deRYQaMxEqs](https://youtu.be/deRYQaMxEqs)
 * 💾 **Archivo de Respaldo Local:** [Capturas/demo-video.mp4](Capturas/demo-video.mp4)
 ---
 #### Demostración Multiplataforma Simultánea (Android + iOS)
