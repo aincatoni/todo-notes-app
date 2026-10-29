@@ -1,0 +1,32 @@
+Introducción
+
+Este documento presenta la Evaluación Sumativa N.° 1 de la Unidad 1 de la asignatura Desarrollo de Aplicaciones Móviles. La evaluación corresponde al diseño, construcción y despliegue de la aplicación móvil Mis Notas y Tareas (To-Do List), desarrollada sobre el ecosistema React Native utilizando Expo (SDK 58), tipado estricto en TypeScript y el runtime de alto rendimiento Bun.
+
+A partir de los requerimientos de la unidad para el desarrollo de interfaces y lógica de negocio móvil, esta etapa implementa una solución completa para administrar tareas mediante operaciones CRUD (Crear, Leer, Actualizar y Eliminar). La aplicación permite a los usuarios registrar nuevas tareas con su respectivo título y descripción, visualizar una lista virtualizada optimizada, modificar la información de tareas existentes y eliminarlas de forma segura.
+
+El sistema incorpora validación reactiva en el formulario para garantizar la presencia de los campos obligatorios antes de guardar, vacía los campos automáticamente tras cada registro exitoso, implementa diálogos nativos del sistema operativo (Alert) para confirmar acciones destructivas de borrado, y cuenta con una barra de filtros segmentada (Todas, Pendientes y Completadas) junto a un buscador en tiempo real.
+
+Para la persistencia de datos offline, la aplicación integra AsyncStorage, almacenando la colección de tareas serializada en formato JSON en el almacenamiento interno del dispositivo bajo la clave @ipss_todo_app:tasks_v1. Esto garantiza la conservación total de los datos al cerrar o reiniciar la aplicación, sin requerir conexión a internet. Además, se evidencia la interoperabilidad nativa multiplataforma ejecutando exactamente el mismo código base en paralelo sobre iOS (iPhone) y Android (emulador en Android Studio).
+
+El objetivo de esta implementación es demostrar el dominio de los conceptos fundamentales de React Native y la Nueva Arquitectura (Fabric Renderer, TurboModules y motor Hermes), la aplicación de patrones de diseño como Custom Hooks e inmutabilidad de estado, principios de diseño de interfaz de usuario móvil (jerarquía visual, balance, contraste WCAG, ritmo espacial en grid de 8 puntos y ergonomía táctil), y la adopción de buenas prácticas de ingeniería mediante pruebas unitarias automatizadas (TDD) con el test runner de Bun.
+
+Repositorio en GitHub: https://github.com/aincatoni/todo-notes-app
+Video Demostrativo en iPhone (YouTube): https://youtube.com/shorts/k3e_sxzy7Bc
+Video Explicativo / Defensa Técnica (YouTube): [Pega aquí el enlace de tu video de defensa]
+
+
+En este repositorio encontrarás:
+
+- Un orquestador principal (App.tsx), encargado de coordinar la vista raíz, manejar las áreas seguras (SafeAreaProvider y SafeAreaView), configurar la barra de estado nativa y disponer de un botón flotante ergonómico (FAB).
+- Un modelo de datos formal (src/types/task.ts), con interfaces tipadas en TypeScript para las entidades Task (con campos id, title, description, completed, createdAt y updatedAt), TaskFilter y TaskFormData.
+- Un Custom Hook desacoplado (src/hooks/useTasks.ts), que encapsula el 100% de la lógica de negocio, cálculos de estadísticas reactivas, filtrado por estado, búsqueda de texto y operaciones CRUD con mutación inmutable.
+- Un módulo de persistencia local (src/storage/taskStorage.ts), como abstracción asíncrona sobre AsyncStorage con serialización JSON, manejo de excepciones y tareas semilla demostrativas para la primera ejecución.
+- Un componente de encabezado (src/components/Header.tsx), que muestra el identificador institucional EVA1 • IPSS 2026, títulos jerárquicos, métricas en vivo y botón de acción rápida.
+- Un componente de filtros y búsqueda (src/components/TaskFilterBar.tsx), con barra de búsqueda, botón de limpieza y pestañas segmentadas que contabilizan tareas en tiempo real.
+- Un componente de tarjeta de tarea (src/components/TaskItem.tsx), que renderiza cada tarea con checkbox táctil, estilo tachado al completar, fecha formateada en español, botón de edición y botón de eliminación con diálogo nativo Alert.alert.
+- Un componente modal interactivo (src/components/TaskModal.tsx), como formulario emergente adaptativo con soporte para teclado móvil (KeyboardAvoidingView), validaciones con banners de error, contadores de caracteres y limpieza automática.
+- Un componente de estados vacíos (src/components/EmptyState.tsx), con ilustraciones e instrucciones contextuales cuando no hay tareas registradas o cuando una búsqueda no arroja coincidencias.
+- Una suite de pruebas unitarias automatizadas (src/__tests__/taskLogic.test.ts), con 13 pruebas unitarias basadas en TDD ejecutadas con bun test en menos de 10 ms, validando creación, validación, inmutabilidad, filtros y métricas.
+- Registro de 21 evidencias fotográficas (Capturas/), documentando paso a paso la preparación del entorno con Homebrew y Watchman, CLI de Expo, ejecución de pruebas TDD, validación de errores en UI y demostración simultánea en iOS y Android.
+- Un guion técnico de defensa oral (GUION_VIDEO_DEFENSA.md), con la estructura cronometrada paso a paso para la exposición oral del trabajo ante el docente.
+- Un informe exhaustivo (README.md), con la documentación que desglosa en profundidad los 5 indicadores de la rúbrica institucional (Arquitectura, Patrones de diseño, Principios de UI móvil, Componentes implementados y Usabilidad).
