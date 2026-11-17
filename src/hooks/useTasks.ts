@@ -1,6 +1,14 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Task, TaskFilter } from '../types/task';
-import { taskStorage } from '../storage/taskStorage';
+import { taskStorage } from '../composition';
+import {
+  validateAndCreateTask,
+  updateTask,
+  toggleTaskStatus,
+  deleteTaskById,
+  filterTasks,
+  computeTaskStats,
+} from '../domain/taskRules';
 
 export function useTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -33,22 +41,12 @@ export function useTasks() {
   // Agregar nueva tarea
   const addTask = useCallback(
     async (title: string, description: string): Promise<boolean> => {
-      const trimmedTitle = title.trim();
-      const trimmedDesc = description.trim();
-
-      if (!trimmedTitle) {
+      const res = validateAndCreateTask(title, description, tasks);
+      if (!res.success || !res.task) {
         return false;
       }
 
-      const newTask: Task = {
-        id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        title: trimmedTitle,
-        description: trimmedDesc,
-        completed: false,
-        createdAt: Date.now(),
-      };
-
-      const updated = [newTask, ...tasks];
+      const updated = [res.task, ...tasks];
       await persist(updated);
       return true;
     },
@@ -58,25 +56,12 @@ export function useTasks() {
   // Editar tarea existente
   const editTask = useCallback(
     async (id: string, title: string, description: string): Promise<boolean> => {
-      const trimmedTitle = title.trim();
-      const trimmedDesc = description.trim();
-
-      if (!trimmedTitle) {
+      const res = updateTask(id, title, description, tasks);
+      if (!res.success) {
         return false;
       }
 
-      const updated = tasks.map((t) =>
-        t.id === id
-          ? {
-              ...t,
-              title: trimmedTitle,
-              description: trimmedDesc,
-              updatedAt: Date.now(),
-            }
-          : t
-      );
-
-      await persist(updated);
+      await persist(res.updatedTasks);
       return true;
     },
     [tasks, persist]
@@ -85,9 +70,7 @@ export function useTasks() {
   // Alternar estado completada / pendiente
   const toggleTask = useCallback(
     async (id: string): Promise<void> => {
-      const updated = tasks.map((t) =>
-        t.id === id ? { ...t, completed: !t.completed, updatedAt: Date.now() } : t
-      );
+      const updated = toggleTaskStatus(id, tasks);
       await persist(updated);
     },
     [tasks, persist]
@@ -96,38 +79,20 @@ export function useTasks() {
   // Eliminar tarea
   const deleteTask = useCallback(
     async (id: string): Promise<void> => {
-      const updated = tasks.filter((t) => t.id !== id);
+      const updated = deleteTaskById(id, tasks);
       await persist(updated);
     },
     [tasks, persist]
   );
 
   // Estadísticas calculadas
-  const stats = useMemo(() => {
-    const total = tasks.length;
-    const completed = tasks.filter((t) => t.completed).length;
-    const pending = total - completed;
-    return { total, completed, pending };
-  }, [tasks]);
+  const stats = useMemo(() => computeTaskStats(tasks), [tasks]);
 
   // Lista filtrada y con búsqueda
-  const filteredTasks = useMemo(() => {
-    return tasks.filter((t) => {
-      // Filtro por estado
-      if (filter === 'pending' && t.completed) return false;
-      if (filter === 'completed' && !t.completed) return false;
-
-      // Filtro por búsqueda
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesTitle = t.title.toLowerCase().includes(query);
-        const matchesDesc = t.description.toLowerCase().includes(query);
-        return matchesTitle || matchesDesc;
-      }
-
-      return true;
-    });
-  }, [tasks, filter, searchQuery]);
+  const filteredTasks = useMemo(
+    () => filterTasks(tasks, filter, searchQuery),
+    [tasks, filter, searchQuery]
+  );
 
   return {
     tasks,
