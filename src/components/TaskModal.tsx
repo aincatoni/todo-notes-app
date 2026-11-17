@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -20,32 +20,22 @@ interface TaskModalProps {
   taskToEdit?: Task | null;
 }
 
-export const TaskModal: React.FC<TaskModalProps> = ({
-  visible,
+interface TaskModalContentProps {
+  onClose: () => void;
+  onSubmit: (title: string, description: string, id?: string) => Promise<boolean>;
+  taskToEdit?: Task | null;
+}
+
+const TaskModalContent: React.FC<TaskModalContentProps> = ({
   onClose,
   onSubmit,
   taskToEdit,
 }) => {
   const isEditing = Boolean(taskToEdit);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState(taskToEdit?.title ?? '');
+  const [description, setDescription] = useState(taskToEdit?.description ?? '');
   const [errorMessage, setErrorMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
-
-  // Sincronizar campos cuando se abre en modo edición o creación
-  useEffect(() => {
-    if (visible) {
-      if (taskToEdit) {
-        setTitle(taskToEdit.title);
-        setDescription(taskToEdit.description || '');
-      } else {
-        setTitle('');
-        setDescription('');
-      }
-      setErrorMessage('');
-      setSubmitting(false);
-    }
-  }, [visible, taskToEdit]);
 
   const handleSave = async () => {
     const trimmedTitle = title.trim();
@@ -76,131 +66,149 @@ export const TaskModal: React.FC<TaskModalProps> = ({
   };
 
   return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.overlay}
+    >
+      <Pressable style={styles.backdrop} onPress={onClose} />
+
+      <View style={styles.modalContent}>
+        {/* Header del modal */}
+        <View style={styles.header}>
+          <View style={styles.headerIconContainer}>
+            <Ionicons
+              name={isEditing ? 'pencil' : 'add-circle'}
+              size={22}
+              color="#2563EB"
+            />
+          </View>
+          <Text style={styles.headerTitle}>
+            {isEditing ? 'Editar Tarea' : 'Nueva Tarea'}
+          </Text>
+          <Pressable
+            onPress={onClose}
+            style={styles.closeButton}
+            accessibilityLabel="Cerrar ventana"
+          >
+            <Ionicons name="close" size={22} color="#64748B" />
+          </Pressable>
+        </View>
+
+        <ScrollView
+          style={styles.body}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Mensaje de error de validación */}
+          {Boolean(errorMessage) && (
+            <View style={styles.errorBanner}>
+              <Ionicons name="alert-circle" size={18} color="#DC2626" />
+              <Text style={styles.errorBannerText}>{errorMessage}</Text>
+            </View>
+          )}
+
+          {/* Campo Título */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>
+              Título <Text style={styles.requiredMark}>*</Text>
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                Boolean(errorMessage) && styles.inputError,
+              ]}
+              placeholder="Ej. Revisar apunte de React Native"
+              placeholderTextColor="#94A3B8"
+              value={title}
+              onChangeText={(text) => {
+                setTitle(text);
+                if (errorMessage) setErrorMessage('');
+              }}
+              maxLength={80}
+              autoFocus={true}
+            />
+            <Text style={styles.helperText}>
+              {title.length}/80 caracteres
+            </Text>
+          </View>
+
+          {/* Campo Descripción */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Descripción</Text>
+            <TextInput
+              style={[styles.input, styles.textArea]}
+              placeholder="Detalles adicionales, notas o subtareas..."
+              placeholderTextColor="#94A3B8"
+              value={description}
+              onChangeText={setDescription}
+              multiline={true}
+              numberOfLines={4}
+              textAlignVertical="top"
+              maxLength={300}
+            />
+            <Text style={styles.helperText}>
+              {description.length}/300 caracteres
+            </Text>
+          </View>
+        </ScrollView>
+
+        {/* Botones de acción */}
+        <View style={styles.footer}>
+          <Pressable
+            onPress={onClose}
+            style={({ pressed }) => [
+              styles.cancelButton,
+              pressed && styles.buttonPressed,
+            ]}
+            disabled={submitting}
+          >
+            <Text style={styles.cancelButtonText}>Cancelar</Text>
+          </Pressable>
+
+          <Pressable
+            onPress={handleSave}
+            style={({ pressed }) => [
+              styles.submitButton,
+              pressed && styles.buttonPressed,
+              submitting && styles.buttonDisabled,
+            ]}
+            disabled={submitting}
+          >
+            <Text style={styles.submitButtonText}>
+              {submitting
+                ? 'Guardando...'
+                : isEditing
+                ? 'Actualizar'
+                : 'Guardar Tarea'}
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </KeyboardAvoidingView>
+  );
+};
+
+export const TaskModal: React.FC<TaskModalProps> = ({
+  visible,
+  onClose,
+  onSubmit,
+  taskToEdit,
+}) => {
+  return (
     <Modal
       visible={visible}
       animationType="slide"
       transparent={true}
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.overlay}
-      >
-        <Pressable style={styles.backdrop} onPress={onClose} />
-
-        <View style={styles.modalContent}>
-          {/* Header del modal */}
-          <View style={styles.header}>
-            <View style={styles.headerIconContainer}>
-              <Ionicons
-                name={isEditing ? 'pencil' : 'add-circle'}
-                size={22}
-                color="#2563EB"
-              />
-            </View>
-            <Text style={styles.headerTitle}>
-              {isEditing ? 'Editar Tarea' : 'Nueva Tarea'}
-            </Text>
-            <Pressable
-              onPress={onClose}
-              style={styles.closeButton}
-              accessibilityLabel="Cerrar ventana"
-            >
-              <Ionicons name="close" size={22} color="#64748B" />
-            </Pressable>
-          </View>
-
-          <ScrollView
-            style={styles.body}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-          >
-            {/* Mensaje de error de validación */}
-            {Boolean(errorMessage) && (
-              <View style={styles.errorBanner}>
-                <Ionicons name="alert-circle" size={18} color="#DC2626" />
-                <Text style={styles.errorBannerText}>{errorMessage}</Text>
-              </View>
-            )}
-
-            {/* Campo Título */}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>
-                Título <Text style={styles.requiredMark}>*</Text>
-              </Text>
-              <TextInput
-                style={[
-                  styles.input,
-                  Boolean(errorMessage) && styles.inputError,
-                ]}
-                placeholder="Ej. Revisar apunte de React Native"
-                placeholderTextColor="#94A3B8"
-                value={title}
-                onChangeText={(text) => {
-                  setTitle(text);
-                  if (errorMessage) setErrorMessage('');
-                }}
-                maxLength={80}
-                autoFocus={true}
-              />
-              <Text style={styles.helperText}>
-                {title.length}/80 caracteres
-              </Text>
-            </View>
-
-            {/* Campo Descripción */}
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Descripción</Text>
-              <TextInput
-                style={[styles.input, styles.textArea]}
-                placeholder="Detalles adicionales, notas o subtareas..."
-                placeholderTextColor="#94A3B8"
-                value={description}
-                onChangeText={setDescription}
-                multiline={true}
-                numberOfLines={4}
-                textAlignVertical="top"
-                maxLength={300}
-              />
-              <Text style={styles.helperText}>
-                {description.length}/300 caracteres
-              </Text>
-            </View>
-          </ScrollView>
-
-          {/* Botones de acción */}
-          <View style={styles.footer}>
-            <Pressable
-              onPress={onClose}
-              style={({ pressed }) => [
-                styles.cancelButton,
-                pressed && styles.buttonPressed,
-              ]}
-              disabled={submitting}
-            >
-              <Text style={styles.cancelButtonText}>Cancelar</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={handleSave}
-              style={({ pressed }) => [
-                styles.submitButton,
-                pressed && styles.buttonPressed,
-                submitting && styles.buttonDisabled,
-              ]}
-              disabled={submitting}
-            >
-              <Text style={styles.submitButtonText}>
-                {submitting
-                  ? 'Guardando...'
-                  : isEditing
-                  ? 'Actualizar'
-                  : 'Guardar Tarea'}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </KeyboardAvoidingView>
+      {visible ? (
+        <TaskModalContent
+          key={taskToEdit?.id ?? 'new'}
+          onClose={onClose}
+          onSubmit={onSubmit}
+          taskToEdit={taskToEdit}
+        />
+      ) : null}
     </Modal>
   );
 };
