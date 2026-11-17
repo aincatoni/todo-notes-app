@@ -20,6 +20,22 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "plugins": [
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Usamos la cámara para adjuntar una foto a tus tareas.",
+          "photosPermission": "Usamos tus fotos para adjuntar una imagen a tus tareas."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Usamos tu ubicación para registrar dónde creas cada tarea."
+        }
+      ],
+      "expo-secure-store"
+    ]
   }
 }
