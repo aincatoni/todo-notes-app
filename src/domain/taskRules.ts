@@ -1,4 +1,4 @@
-import { Task, TaskFilter } from '../types/task';
+import { Photo, Task, TaskFilter } from '../types/task';
 import { Clock } from '../ports/clock';
 import { IdGenerator } from '../ports/idGenerator';
 import { systemClock } from '../adapters/systemClock';
@@ -8,6 +8,7 @@ export interface TaskRuleDeps {
   clock?: Clock;
   idGenerator?: IdGenerator;
   userId?: string;
+  photo?: Photo | null;
 }
 
 export function validateAndCreateTask(
@@ -33,7 +34,7 @@ export function validateAndCreateTask(
     description: trimmedDesc,
     completed: false,
     createdAt: clock.now(),
-    photo: null,
+    photo: deps?.photo ?? null,
     location: null,
     weather: null,
     remoteId: null,
@@ -63,6 +64,7 @@ export function updateTask(
 
   const clock = deps?.clock ?? systemClock;
   const updatedAt = clock.now();
+  const hasPhotoOverride = deps !== undefined && deps.photo !== undefined;
 
   const updatedTasks = tasks.map((t) =>
     t.id === id
@@ -71,6 +73,7 @@ export function updateTask(
           title: trimmedTitle,
           description: description.trim(),
           updatedAt,
+          ...(hasPhotoOverride ? { photo: deps.photo ?? null } : {}),
         }
       : t
   );

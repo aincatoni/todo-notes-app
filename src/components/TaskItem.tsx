@@ -1,13 +1,14 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Task } from '../types/task';
+import { Photo, Task } from '../types/task';
 
 interface TaskItemProps {
   task: Task;
   onToggle: (id: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
+  onPreviewPhoto?: (photo: Photo) => void;
 }
 
 export const TaskItem: React.FC<TaskItemProps> = ({
@@ -15,6 +16,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   onToggle,
   onEdit,
   onDelete,
+  onPreviewPhoto,
 }) => {
   const handleDeletePress = () => {
     Alert.alert(
@@ -76,6 +78,28 @@ export const TaskItem: React.FC<TaskItemProps> = ({
           >
             {task.description}
           </Text>
+        )}
+
+        {task.photo && (
+          <Pressable
+            onPress={() => onPreviewPhoto?.(task.photo!)}
+            style={({ pressed }) => [
+              styles.photoThumbnailRow,
+              pressed && styles.actionButtonPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={`Ver foto de ${task.title}`}
+          >
+            <Image
+              source={{ uri: task.photo.uri }}
+              style={styles.photoThumbnail}
+            />
+            <Text style={styles.photoLabel}>
+              {task.photo.takenWith === 'camera'
+                ? 'Foto (cámara) • Tocar para ampliar'
+                : 'Foto (galería) • Tocar para ampliar'}
+            </Text>
+          </Pressable>
         )}
 
         <View style={styles.footerRow}>
@@ -221,5 +245,28 @@ const styles = StyleSheet.create({
   actionButtonPressed: {
     opacity: 0.65,
     transform: [{ scale: 0.94 }],
+  },
+  photoThumbnailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+    padding: 6,
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  photoThumbnail: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: '#E2E8F0',
+  },
+  photoLabel: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
   },
 });

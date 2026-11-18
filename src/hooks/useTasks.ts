@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Task, TaskFilter } from '../types/task';
-import { taskStorage } from '../composition';
+import { Photo, Task, TaskFilter } from '../types/task';
+import { photoFilesPort, taskStorage } from '../composition';
 import {
   validateAndCreateTask,
   updateTask,
@@ -40,8 +40,14 @@ export function useTasks() {
 
   // Agregar nueva tarea
   const addTask = useCallback(
-    async (title: string, description: string): Promise<boolean> => {
-      const res = validateAndCreateTask(title, description, tasks);
+    async (
+      title: string,
+      description: string,
+      photo?: Photo | null
+    ): Promise<boolean> => {
+      const res = validateAndCreateTask(title, description, tasks, {
+        ...(photo !== undefined ? { photo } : {}),
+      });
       if (!res.success || !res.task) {
         return false;
       }
@@ -55,13 +61,30 @@ export function useTasks() {
 
   // Editar tarea existente
   const editTask = useCallback(
-    async (id: string, title: string, description: string): Promise<boolean> => {
-      const res = updateTask(id, title, description, tasks);
+    async (
+      id: string,
+      title: string,
+      description: string,
+      photo?: Photo | null
+    ): Promise<boolean> => {
+      const previousTask = tasks.find((t) => t.id === id);
+      const res = updateTask(id, title, description, tasks, {
+        ...(photo !== undefined ? { photo } : {}),
+      });
       if (!res.success) {
         return false;
       }
 
       await persist(res.updatedTasks);
+
+      if (
+        photo !== undefined &&
+        previousTask?.photo?.uri &&
+        previousTask.photo.uri !== photo?.uri
+      ) {
+        await photoFilesPort.delete(previousTask.photo.uri);
+      }
+
       return true;
     },
     [tasks, persist]
@@ -76,11 +99,16 @@ export function useTasks() {
     [tasks, persist]
   );
 
-  // Eliminar tarea
+  // Eliminar tarea (R7: borra también el archivo de foto asociado)
   const deleteTask = useCallback(
     async (id: string): Promise<void> => {
+      const target = tasks.find((t) => t.id === id);
       const updated = deleteTaskById(id, tasks);
       await persist(updated);
+
+      if (target?.photo?.uri) {
+        await photoFilesPort.delete(target.photo.uri);
+      }
     },
     [tasks, persist]
   );

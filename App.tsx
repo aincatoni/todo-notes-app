@@ -14,12 +14,13 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTasks } from './src/hooks/useTasks';
-import { Task } from './src/types/task';
+import { Photo, Task } from './src/types/task';
 import { Header } from './src/components/Header';
 import { TaskFilterBar } from './src/components/TaskFilterBar';
 import { TaskItem } from './src/components/TaskItem';
 import { TaskModal } from './src/components/TaskModal';
 import { EmptyState } from './src/components/EmptyState';
+import { PhotoPreviewModal } from './src/components/PhotoPreviewModal';
 
 export default function App() {
   const {
@@ -39,6 +40,7 @@ export default function App() {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [previewPhoto, setPreviewPhoto] = useState<Photo | null>(null);
 
   const handleOpenCreate = useCallback(() => {
     setTaskToEdit(null);
@@ -56,11 +58,16 @@ export default function App() {
   }, []);
 
   const handleSubmitTask = useCallback(
-    async (title: string, description: string, id?: string): Promise<boolean> => {
+    async (
+      title: string,
+      description: string,
+      id?: string,
+      photo?: Photo | null
+    ): Promise<boolean> => {
       if (id) {
-        return await editTask(id, title, description);
+        return await editTask(id, title, description, photo);
       } else {
-        return await addTask(title, description);
+        return await addTask(title, description, photo);
       }
     },
     [addTask, editTask]
@@ -103,6 +110,7 @@ export default function App() {
                   onToggle={toggleTask}
                   onEdit={handleOpenEdit}
                   onDelete={deleteTask}
+                  onPreviewPhoto={setPreviewPhoto}
                 />
               )}
               ListEmptyComponent={
@@ -143,6 +151,12 @@ export default function App() {
             onClose={handleCloseModal}
             onSubmit={handleSubmitTask}
             taskToEdit={taskToEdit}
+          />
+
+          <PhotoPreviewModal
+            visible={Boolean(previewPhoto)}
+            photo={previewPhoto}
+            onClose={() => setPreviewPhoto(null)}
           />
         </View>
       </SafeAreaView>

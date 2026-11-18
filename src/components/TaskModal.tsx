@@ -13,37 +13,36 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Task } from '../types/task';
+import { Photo, Task } from '../types/task';
 import { PermissionOutcome, PermissionResource } from '../ports/permissions';
 import { usePermissions } from '../hooks/usePermissions';
 import { PermissionRationale } from './PermissionRationale';
-
-const OUTCOME_LABEL: Record<PermissionOutcome, string> = {
-  granted: 'Concedido',
-  denied: 'Denegado',
-  blocked: 'Bloqueado',
-};
-
-const PERMISSION_BUTTONS: {
-  resource: PermissionResource;
-  label: string;
-  icon: keyof typeof Ionicons.glyphMap;
-}[] = [
-  { resource: 'camera', label: 'Tomar foto', icon: 'camera-outline' },
-  { resource: 'mediaLibrary', label: 'Elegir de galería', icon: 'images-outline' },
-  { resource: 'location', label: 'Verificar GPS', icon: 'location-outline' },
-];
+import { PhotoNotice, PhotoPicker } from './PhotoPicker';
+import { PhotoPreviewModal } from './PhotoPreviewModal';
+import { cameraPort, clock, photoFilesPort } from '../composition';
+import { createPhotoService } from '../services/photoService';
+import { isAppError } from '../domain/errors';
 
 interface TaskModalProps {
   visible: boolean;
   onClose: () => void;
-  onSubmit: (title: string, description: string, id?: string) => Promise<boolean>;
+  onSubmit: (
+    title: string,
+    description: string,
+    id?: string,
+    photo?: Photo | null
+  ) => Promise<boolean>;
   taskToEdit?: Task | null;
 }
 
 interface TaskModalContentProps {
   onClose: () => void;
-  onSubmit: (title: string, description: string, id?: string) => Promise<boolean>;
+  onSubmit: (
+    title: string,
+    description: string,
+    id?: string,
+    photo?: Photo | null
+  ) => Promise<boolean>;
   taskToEdit?: Task | null;
 }
 
@@ -53,18 +52,22 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
   taskToEdit,
 }) => {
   const isEditing = Boolean(taskToEdit);
+  const [draftTaskId] = useState(
+    () => taskToEdit?.id ?? `draft-${clock.now()}`
+  );
   const [title, setTitle] = useState(taskToEdit?.title ?? '');
   const [description, setDescription] = useState(taskToEdit?.description ?? '');
+  const [photo, setPhoto] = useState<Photo | null>(taskToEdit?.photo ?? null);
+  const [previewPhoto, setPreviewPhoto] = useState<Photo | null>(null);
+  const [capturingPhoto, setCapturingPhoto] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [permissionOutcomes, setPermissionOutcomes] = useState<
     Partial<Record<PermissionResource, PermissionOutcome>>
   >({});
-  const [permissionNotice, setPermissionNotice] = useState<{
-    text: string;
-    blocked: boolean;
-    resource?: PermissionResource;
-  } | null>(null);
+  const [permissionNotice, setPermissionNotice] = useState<
+    (PhotoNotice & { resource?: PermissionResource }) | null
+  >(null);
 
   const {
     ensurePermission,
@@ -135,10 +138,90 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
     };
   }, [getPermissionStatus]);
 
-  const handleRequestPermission = async (resource: PermissionResource) => {
+  const handleAcquirePhoto = async (source: 'camera' | 'gallery') => {
     Keyboard.dismiss();
-    const outcome = await ensurePermission(resource);
-    setPermissionOutcomes((prev) => ({ ...prev, [resource]: outcome }));
+    setCapturingPhoto(true);
+
+    const resource: PermissionResource =
+      source === 'camera' ? 'camera' : 'mediaLibrary';
+    const photoService = createPhotoService({
+      camera: cameraPort,
+      photoFiles: photoFilesPort,
+      permissions: { ensure: ensurePermission },
+      clock,
+    });
+    const tempPrevious =
+      photo && photo.uri !== taskToEdit?.photo?.uri ? photo : null;
+
+    try {
+      const captured =
+        source === 'camera'
+          ? await photoService.captureFromCamera({
+              userId: 'local',
+              taskId: draftTaskId,
+              previousPhoto: tempPrevious,
+            })
+          : await photoService.pickFromGallery({
+              userId: 'local',
+              taskId: draftTaskId,
+              previousPhoto: tempPrevious,
+            });
+
+      setPhoto(captured);
+      setPermissionOutcomes((prev) => ({ ...prev, [resource]: 'granted' }));
+      setPermissionNotice(null);
+    } catch (err) {
+      if (!isAppError(err)) {
+        setPermissionNotice({
+          text: 'No se pudo obtener la imagen.',
+          suggestGallery: source === 'camera',
+          resource,
+        });
+        return;
+      }
+
+      if (err.code === 'CAPTURE_CANCELLED') {
+        return;
+      }
+
+      if (err.code === 'PERMISSION_BLOCKED') {
+        setPermissionOutcomes((prev) => ({ ...prev, [resource]: 'blocked' }));
+        setPermissionNotice({
+          text: 'El permiso está bloqueado. Habilítalo desde Ajustes del sistema.',
+          blocked: true,
+          suggestGallery: source === 'camera',
+          resource,
+        });
+        return;
+      }
+
+      if (err.code === 'PERMISSION_DENIED') {
+        setPermissionOutcomes((prev) => ({ ...prev, [resource]: 'denied' }));
+        setPermissionNotice({
+          text:
+            source === 'camera'
+              ? 'Permiso de cámara denegado. Puedes usar "Elegir de galería".'
+              : 'Permiso de galería denegado.',
+          suggestGallery: source === 'camera',
+          resource,
+        });
+        return;
+      }
+
+      setPermissionNotice({
+        text: err.message,
+        suggestGallery: source === 'camera',
+        resource,
+      });
+    } finally {
+      setCapturingPhoto(false);
+    }
+  };
+
+  const handleCheckLocationPermission = async () => {
+    Keyboard.dismiss();
+    const outcome = await ensurePermission('location');
+    setPermissionOutcomes((prev) => ({ ...prev, location: outcome }));
 
     if (outcome === 'granted') {
       setPermissionNotice(null);
@@ -149,28 +232,31 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
       setPermissionNotice({
         text: 'El permiso está bloqueado. Habilítalo desde Ajustes del sistema.',
         blocked: true,
-        resource,
-      });
-      return;
-    }
-
-    if (resource === 'camera') {
-      setPermissionNotice({
-        text: 'Permiso de cámara denegado. Puedes usar "Elegir de galería".',
-        blocked: false,
-        resource,
+        resource: 'location',
       });
       return;
     }
 
     setPermissionNotice({
-      text:
-        resource === 'mediaLibrary'
-          ? 'Permiso de galería denegado.'
-          : 'Permiso de ubicación denegado. La tarea podrá guardarse sin ubicación.',
+      text: 'Permiso de ubicación denegado. La tarea podrá guardarse sin ubicación.',
       blocked: false,
-      resource,
+      resource: 'location',
     });
+  };
+
+  const handleRemoveDraftPhoto = () => {
+    if (photo && photo.uri !== taskToEdit?.photo?.uri) {
+      void photoFilesPort.delete(photo.uri);
+    }
+    setPhoto(null);
+  };
+
+  const handleCancelModal = () => {
+    Keyboard.dismiss();
+    if (photo && photo.uri !== taskToEdit?.photo?.uri) {
+      void photoFilesPort.delete(photo.uri);
+    }
+    onClose();
   };
 
   const handleSave = async () => {
@@ -187,7 +273,8 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
     const success = await onSubmit(
       trimmedTitle,
       description.trim(),
-      taskToEdit?.id
+      taskToEdit?.id,
+      photo
     );
 
     setSubmitting(false);
@@ -196,6 +283,7 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
       // Limpiar campos tras guardar exitosamente (requisito del encargo)
       setTitle('');
       setDescription('');
+      setPhoto(null);
       onClose();
     } else {
       setErrorMessage('Ocurrió un error al guardar la tarea.');
@@ -207,7 +295,7 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={styles.overlay}
     >
-      <Pressable style={styles.backdrop} onPress={onClose} />
+      <Pressable style={styles.backdrop} onPress={handleCancelModal} />
 
       <View style={styles.modalContent}>
         {/* Header del modal */}
@@ -223,7 +311,7 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
             {isEditing ? 'Editar Tarea' : 'Nueva Tarea'}
           </Text>
           <Pressable
-            onPress={onClose}
+            onPress={handleCancelModal}
             style={styles.closeButton}
             accessibilityLabel="Cerrar ventana"
           >
@@ -288,95 +376,42 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
             </Text>
           </View>
 
-          {/* Sección de permisos incrementales (Fase 2) */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>
-              Recursos del dispositivo (Cámara, Galería y GPS)
-            </Text>
-            <View style={styles.permissionButtonsRow}>
-              {PERMISSION_BUTTONS.map(({ resource, label, icon }) => {
-                const outcome = permissionOutcomes[resource];
-                return (
-                  <Pressable
-                    key={resource}
-                    onPress={() => void handleRequestPermission(resource)}
-                    style={({ pressed }) => [
-                      styles.permissionButton,
-                      pressed && styles.buttonPressed,
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel={label}
-                  >
-                    <Ionicons name={icon} size={18} color="#2563EB" />
-                    <Text style={styles.permissionButtonText}>{label}</Text>
-                    {outcome && (
-                      <Text
-                        style={[
-                          styles.outcomeBadge,
-                          outcome === 'granted' && styles.outcomeGranted,
-                          outcome === 'denied' && styles.outcomeDenied,
-                          outcome === 'blocked' && styles.outcomeBlocked,
-                        ]}
-                      >
-                        {OUTCOME_LABEL[outcome]}
-                      </Text>
-                    )}
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            {permissionNotice && (
-              <View
-                style={[
-                  styles.permissionNoticeBanner,
-                  permissionNotice.blocked && styles.permissionNoticeBlocked,
-                ]}
-              >
-                <Text style={styles.permissionNoticeText}>
-                  {permissionNotice.text}
-                </Text>
-                {permissionNotice.blocked && (
-                  <Pressable
-                    onPress={() => void openSettings()}
-                    style={({ pressed }) => [
-                      styles.openSettingsInlineButton,
-                      pressed && styles.buttonPressed,
-                    ]}
-                    accessibilityRole="button"
-                    accessibilityLabel="Abrir ajustes"
-                  >
-                    <Text style={styles.openSettingsInlineText}>
-                      Abrir ajustes
-                    </Text>
-                  </Pressable>
-                )}
-              </View>
-            )}
-          </View>
+          {/* Periféricos y permisos incrementales (Fases 2 y 3) */}
+          <PhotoPicker
+            photo={photo}
+            busy={capturingPhoto}
+            permissionOutcomes={permissionOutcomes}
+            notice={permissionNotice}
+            onTakePhoto={() => void handleAcquirePhoto('camera')}
+            onPickFromGallery={() => void handleAcquirePhoto('gallery')}
+            onCheckLocation={() => void handleCheckLocationPermission()}
+            onRemovePhoto={handleRemoveDraftPhoto}
+            onPreviewPhoto={setPreviewPhoto}
+            onOpenSettings={() => void openSettings()}
+          />
         </ScrollView>
 
         {/* Botones de acción */}
         <View style={styles.footer}>
           <Pressable
-            onPress={onClose}
+            onPress={handleCancelModal}
             style={({ pressed }) => [
               styles.cancelButton,
               pressed && styles.buttonPressed,
             ]}
-            disabled={submitting}
+            disabled={submitting || capturingPhoto}
           >
             <Text style={styles.cancelButtonText}>Cancelar</Text>
           </Pressable>
 
           <Pressable
-            onPress={handleSave}
+            onPress={() => void handleSave()}
             style={({ pressed }) => [
               styles.submitButton,
               pressed && styles.buttonPressed,
-              submitting && styles.buttonDisabled,
+              (submitting || capturingPhoto) && styles.buttonDisabled,
             ]}
-            disabled={submitting}
+            disabled={submitting || capturingPhoto}
           >
             <Text style={styles.submitButtonText}>
               {submitting
@@ -388,6 +423,13 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
           </Pressable>
         </View>
       </View>
+
+      <PhotoPreviewModal
+        visible={Boolean(previewPhoto)}
+        photo={previewPhoto}
+        onClose={() => setPreviewPhoto(null)}
+        asOverlay={true}
+      />
 
       <PermissionRationale {...rationaleModalProps} />
     </KeyboardAvoidingView>
@@ -565,78 +607,5 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     backgroundColor: '#93C5FD',
-  },
-  permissionButtonsRow: {
-    gap: 8,
-  },
-  permissionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 44,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderRadius: 10,
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-    gap: 8,
-  },
-  permissionButtonText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1E40AF',
-  },
-  outcomeBadge: {
-    fontSize: 11,
-    fontWeight: '700',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  outcomeGranted: {
-    backgroundColor: '#DCFCE7',
-    color: '#166534',
-  },
-  outcomeDenied: {
-    backgroundColor: '#FEF3C7',
-    color: '#92400E',
-  },
-  outcomeBlocked: {
-    backgroundColor: '#FEE2E2',
-    color: '#991B1B',
-  },
-  permissionNoticeBanner: {
-    marginTop: 10,
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: '#FFFBEB',
-    borderWidth: 1,
-    borderColor: '#FDE68A',
-    gap: 8,
-  },
-  permissionNoticeBlocked: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FCA5A5',
-  },
-  permissionNoticeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#334155',
-  },
-  openSettingsInlineButton: {
-    alignSelf: 'flex-start',
-    minHeight: 44,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#DC2626',
-    justifyContent: 'center',
-  },
-  openSettingsInlineText: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '700',
   },
 });
