@@ -1,17 +1,38 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  AppState,
   View,
   Text,
   TextInput,
   StyleSheet,
   Modal,
   Pressable,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Task } from '../types/task';
+import { PermissionOutcome, PermissionResource } from '../ports/permissions';
+import { usePermissions } from '../hooks/usePermissions';
+import { PermissionRationale } from './PermissionRationale';
+
+const OUTCOME_LABEL: Record<PermissionOutcome, string> = {
+  granted: 'Concedido',
+  denied: 'Denegado',
+  blocked: 'Bloqueado',
+};
+
+const PERMISSION_BUTTONS: {
+  resource: PermissionResource;
+  label: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}[] = [
+  { resource: 'camera', label: 'Tomar foto', icon: 'camera-outline' },
+  { resource: 'mediaLibrary', label: 'Elegir de galería', icon: 'images-outline' },
+  { resource: 'location', label: 'Verificar GPS', icon: 'location-outline' },
+];
 
 interface TaskModalProps {
   visible: boolean;
@@ -36,8 +57,124 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
   const [description, setDescription] = useState(taskToEdit?.description ?? '');
   const [errorMessage, setErrorMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [permissionOutcomes, setPermissionOutcomes] = useState<
+    Partial<Record<PermissionResource, PermissionOutcome>>
+  >({});
+  const [permissionNotice, setPermissionNotice] = useState<{
+    text: string;
+    blocked: boolean;
+    resource?: PermissionResource;
+  } | null>(null);
+
+  const {
+    ensurePermission,
+    getPermissionStatus,
+    openSettings,
+    rationaleModalProps,
+  } = usePermissions();
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncPermissionsFromSystem = async () => {
+      const resources: PermissionResource[] = [
+        'camera',
+        'mediaLibrary',
+        'location',
+      ];
+      const states = await Promise.all(
+        resources.map(async (resource) => ({
+          resource,
+          state: await getPermissionStatus(resource),
+        }))
+      );
+
+      if (!isMounted) {
+        return;
+      }
+
+      const resolvedMap: Partial<Record<PermissionResource, PermissionOutcome>> =
+        {};
+      for (const { resource, state } of states) {
+        if (state.status === 'granted') {
+          resolvedMap[resource] = 'granted';
+        } else if (state.status === 'denied' && !state.canAskAgain) {
+          resolvedMap[resource] = 'blocked';
+        } else if (state.status === 'denied') {
+          resolvedMap[resource] = 'denied';
+        }
+      }
+
+      setPermissionOutcomes(resolvedMap);
+
+      setPermissionNotice((prev) => {
+        if (!prev?.blocked) {
+          return prev;
+        }
+        if (prev.resource && resolvedMap[prev.resource] === 'granted') {
+          return null;
+        }
+        if (!prev.resource && Object.values(resolvedMap).includes('granted')) {
+          return null;
+        }
+        return prev;
+      });
+    };
+
+    void syncPermissionsFromSystem();
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        void syncPermissionsFromSystem();
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.remove();
+    };
+  }, [getPermissionStatus]);
+
+  const handleRequestPermission = async (resource: PermissionResource) => {
+    Keyboard.dismiss();
+    const outcome = await ensurePermission(resource);
+    setPermissionOutcomes((prev) => ({ ...prev, [resource]: outcome }));
+
+    if (outcome === 'granted') {
+      setPermissionNotice(null);
+      return;
+    }
+
+    if (outcome === 'blocked') {
+      setPermissionNotice({
+        text: 'El permiso está bloqueado. Habilítalo desde Ajustes del sistema.',
+        blocked: true,
+        resource,
+      });
+      return;
+    }
+
+    if (resource === 'camera') {
+      setPermissionNotice({
+        text: 'Permiso de cámara denegado. Puedes usar "Elegir de galería".',
+        blocked: false,
+        resource,
+      });
+      return;
+    }
+
+    setPermissionNotice({
+      text:
+        resource === 'mediaLibrary'
+          ? 'Permiso de galería denegado.'
+          : 'Permiso de ubicación denegado. La tarea podrá guardarse sin ubicación.',
+      blocked: false,
+      resource,
+    });
+  };
 
   const handleSave = async () => {
+    Keyboard.dismiss();
     const trimmedTitle = title.trim();
     if (!trimmedTitle) {
       setErrorMessage('El título de la tarea es obligatorio.');
@@ -150,6 +287,73 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
               {description.length}/300 caracteres
             </Text>
           </View>
+
+          {/* Sección de permisos incrementales (Fase 2) */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>
+              Recursos del dispositivo (Cámara, Galería y GPS)
+            </Text>
+            <View style={styles.permissionButtonsRow}>
+              {PERMISSION_BUTTONS.map(({ resource, label, icon }) => {
+                const outcome = permissionOutcomes[resource];
+                return (
+                  <Pressable
+                    key={resource}
+                    onPress={() => void handleRequestPermission(resource)}
+                    style={({ pressed }) => [
+                      styles.permissionButton,
+                      pressed && styles.buttonPressed,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel={label}
+                  >
+                    <Ionicons name={icon} size={18} color="#2563EB" />
+                    <Text style={styles.permissionButtonText}>{label}</Text>
+                    {outcome && (
+                      <Text
+                        style={[
+                          styles.outcomeBadge,
+                          outcome === 'granted' && styles.outcomeGranted,
+                          outcome === 'denied' && styles.outcomeDenied,
+                          outcome === 'blocked' && styles.outcomeBlocked,
+                        ]}
+                      >
+                        {OUTCOME_LABEL[outcome]}
+                      </Text>
+                    )}
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {permissionNotice && (
+              <View
+                style={[
+                  styles.permissionNoticeBanner,
+                  permissionNotice.blocked && styles.permissionNoticeBlocked,
+                ]}
+              >
+                <Text style={styles.permissionNoticeText}>
+                  {permissionNotice.text}
+                </Text>
+                {permissionNotice.blocked && (
+                  <Pressable
+                    onPress={() => void openSettings()}
+                    style={({ pressed }) => [
+                      styles.openSettingsInlineButton,
+                      pressed && styles.buttonPressed,
+                    ]}
+                    accessibilityRole="button"
+                    accessibilityLabel="Abrir ajustes"
+                  >
+                    <Text style={styles.openSettingsInlineText}>
+                      Abrir ajustes
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+          </View>
         </ScrollView>
 
         {/* Botones de acción */}
@@ -184,6 +388,8 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
           </Pressable>
         </View>
       </View>
+
+      <PermissionRationale {...rationaleModalProps} />
     </KeyboardAvoidingView>
   );
 };
@@ -359,5 +565,78 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     backgroundColor: '#93C5FD',
+  },
+  permissionButtonsRow: {
+    gap: 8,
+  },
+  permissionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 44,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 10,
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    gap: 8,
+  },
+  permissionButtonText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1E40AF',
+  },
+  outcomeBadge: {
+    fontSize: 11,
+    fontWeight: '700',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    overflow: 'hidden',
+  },
+  outcomeGranted: {
+    backgroundColor: '#DCFCE7',
+    color: '#166534',
+  },
+  outcomeDenied: {
+    backgroundColor: '#FEF3C7',
+    color: '#92400E',
+  },
+  outcomeBlocked: {
+    backgroundColor: '#FEE2E2',
+    color: '#991B1B',
+  },
+  permissionNoticeBanner: {
+    marginTop: 10,
+    padding: 10,
+    borderRadius: 8,
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    gap: 8,
+  },
+  permissionNoticeBlocked: {
+    backgroundColor: '#FEF2F2',
+    borderColor: '#FCA5A5',
+  },
+  permissionNoticeText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#334155',
+  },
+  openSettingsInlineButton: {
+    alignSelf: 'flex-start',
+    minHeight: 44,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: '#DC2626',
+    justifyContent: 'center',
+  },
+  openSettingsInlineText: {
+    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
   },
 });
