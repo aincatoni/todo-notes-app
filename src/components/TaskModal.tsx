@@ -13,14 +13,20 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Photo, Task } from '../types/task';
+import { GeoLocation, Photo, Task } from '../types/task';
 import { PermissionOutcome, PermissionResource } from '../ports/permissions';
 import { usePermissions } from '../hooks/usePermissions';
 import { PermissionRationale } from './PermissionRationale';
 import { PhotoNotice, PhotoPicker } from './PhotoPicker';
 import { PhotoPreviewModal } from './PhotoPreviewModal';
-import { cameraPort, clock, photoFilesPort } from '../composition';
+import {
+  cameraPort,
+  clock,
+  locationPort,
+  photoFilesPort,
+} from '../composition';
 import { createPhotoService } from '../services/photoService';
+import { createLocationService } from '../services/locationService';
 import { isAppError } from '../domain/errors';
 
 interface TaskModalProps {
@@ -30,7 +36,8 @@ interface TaskModalProps {
     title: string,
     description: string,
     id?: string,
-    photo?: Photo | null
+    photo?: Photo | null,
+    location?: GeoLocation | null
   ) => Promise<boolean>;
   taskToEdit?: Task | null;
 }
@@ -41,7 +48,8 @@ interface TaskModalContentProps {
     title: string,
     description: string,
     id?: string,
-    photo?: Photo | null
+    photo?: Photo | null,
+    location?: GeoLocation | null
   ) => Promise<boolean>;
   taskToEdit?: Task | null;
 }
@@ -58,6 +66,11 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
   const [title, setTitle] = useState(taskToEdit?.title ?? '');
   const [description, setDescription] = useState(taskToEdit?.description ?? '');
   const [photo, setPhoto] = useState<Photo | null>(taskToEdit?.photo ?? null);
+  const [capturedLocation, setCapturedLocation] = useState<GeoLocation | null>(
+    taskToEdit?.location ?? null
+  );
+  const [locationAttempted, setLocationAttempted] = useState(false);
+  const [locating, setLocating] = useState(false);
   const [previewPhoto, setPreviewPhoto] = useState<Photo | null>(null);
   const [capturingPhoto, setCapturingPhoto] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -220,28 +233,80 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
 
   const handleCheckLocationPermission = async () => {
     Keyboard.dismiss();
-    const outcome = await ensurePermission('location');
-    setPermissionOutcomes((prev) => ({ ...prev, location: outcome }));
 
-    if (outcome === 'granted') {
-      setPermissionNotice(null);
+    // R6: Al editar solo se verifica permiso, nunca se sobrescribe la ubicación creada
+    if (isEditing) {
+      const outcome = await ensurePermission('location');
+      setPermissionOutcomes((prev) => ({ ...prev, location: outcome }));
+      if (outcome === 'granted') {
+        setPermissionNotice(null);
+      } else if (outcome === 'blocked') {
+        setPermissionNotice({
+          text: 'El permiso está bloqueado. Habilítalo desde Ajustes del sistema.',
+          blocked: true,
+          resource: 'location',
+        });
+      } else {
+        setPermissionNotice({
+          text: 'Permiso de ubicación denegado.',
+          blocked: false,
+          resource: 'location',
+        });
+      }
       return;
     }
 
-    if (outcome === 'blocked') {
+    setLocating(true);
+    setLocationAttempted(true);
+    const locationService = createLocationService({
+      locationPort,
+      permissions: { ensure: ensurePermission },
+      clock,
+    });
+
+    try {
+      const result = await locationService.captureForNewTask();
+      if (result.location) {
+        setCapturedLocation(result.location);
+        setPermissionOutcomes((prev) => ({ ...prev, location: 'granted' }));
+        setPermissionNotice(null);
+        return;
+      }
+
+      const error = result.error;
+      if (!error) {
+        return;
+      }
+
+      if (error.code === 'PERMISSION_BLOCKED') {
+        setPermissionOutcomes((prev) => ({ ...prev, location: 'blocked' }));
+        setPermissionNotice({
+          text: 'El permiso está bloqueado. Habilítalo desde Ajustes del sistema.',
+          blocked: true,
+          resource: 'location',
+        });
+        return;
+      }
+
+      if (error.code === 'PERMISSION_DENIED') {
+        setPermissionOutcomes((prev) => ({ ...prev, location: 'denied' }));
+        setPermissionNotice({
+          text: 'Permiso de ubicación denegado. La tarea podrá guardarse sin ubicación.',
+          blocked: false,
+          resource: 'location',
+        });
+        return;
+      }
+
+      setPermissionOutcomes((prev) => ({ ...prev, location: 'granted' }));
       setPermissionNotice({
-        text: 'El permiso está bloqueado. Habilítalo desde Ajustes del sistema.',
-        blocked: true,
+        text: error.message,
+        blocked: false,
         resource: 'location',
       });
-      return;
+    } finally {
+      setLocating(false);
     }
-
-    setPermissionNotice({
-      text: 'Permiso de ubicación denegado. La tarea podrá guardarse sin ubicación.',
-      blocked: false,
-      resource: 'location',
-    });
   };
 
   const handleRemoveDraftPhoto = () => {
@@ -270,11 +335,25 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
     setSubmitting(true);
     setErrorMessage('');
 
+    const locationPermissionRejected =
+      locationAttempted &&
+      (permissionOutcomes.location === 'denied' ||
+        permissionOutcomes.location === 'blocked');
+
+    const locationToSubmit = isEditing
+      ? undefined
+      : capturedLocation !== null
+      ? capturedLocation
+      : locationPermissionRejected
+      ? null
+      : undefined;
+
     const success = await onSubmit(
       trimmedTitle,
       description.trim(),
       taskToEdit?.id,
-      photo
+      photo,
+      locationToSubmit
     );
 
     setSubmitting(false);
@@ -284,6 +363,7 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
       setTitle('');
       setDescription('');
       setPhoto(null);
+      setCapturedLocation(null);
       onClose();
     } else {
       setErrorMessage('Ocurrió un error al guardar la tarea.');
@@ -376,9 +456,12 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
             </Text>
           </View>
 
-          {/* Periféricos y permisos incrementales (Fases 2 y 3) */}
+          {/* Periféricos y permisos incrementales (Fases 2, 3 y 4) */}
           <PhotoPicker
             photo={photo}
+            location={capturedLocation}
+            locationLoading={locating}
+            isEditing={isEditing}
             busy={capturingPhoto}
             permissionOutcomes={permissionOutcomes}
             notice={permissionNotice}

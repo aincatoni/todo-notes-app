@@ -1,4 +1,4 @@
-import { Photo, Task, TaskFilter } from '../types/task';
+import { GeoLocation, Photo, Task, TaskFilter } from '../types/task';
 import { Clock } from '../ports/clock';
 import { IdGenerator } from '../ports/idGenerator';
 import { systemClock } from '../adapters/systemClock';
@@ -9,6 +9,7 @@ export interface TaskRuleDeps {
   idGenerator?: IdGenerator;
   userId?: string;
   photo?: Photo | null;
+  location?: GeoLocation | null;
 }
 
 export function validateAndCreateTask(
@@ -35,7 +36,7 @@ export function validateAndCreateTask(
     completed: false,
     createdAt: clock.now(),
     photo: deps?.photo ?? null,
-    location: null,
+    location: deps?.location ?? null,
     weather: null,
     remoteId: null,
     syncStatus: 'pending',

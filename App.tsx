@@ -14,15 +14,19 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 
 import { useTasks } from './src/hooks/useTasks';
-import { Photo, Task } from './src/types/task';
+import { usePermissions } from './src/hooks/usePermissions';
+import { GeoLocation, Photo, Task } from './src/types/task';
 import { Header } from './src/components/Header';
 import { TaskFilterBar } from './src/components/TaskFilterBar';
 import { TaskItem } from './src/components/TaskItem';
 import { TaskModal } from './src/components/TaskModal';
 import { EmptyState } from './src/components/EmptyState';
 import { PhotoPreviewModal } from './src/components/PhotoPreviewModal';
+import { PermissionRationale } from './src/components/PermissionRationale';
 
 export default function App() {
+  const { ensurePermission, rationaleModalProps } = usePermissions();
+
   const {
     tasks,
     filteredTasks,
@@ -36,7 +40,7 @@ export default function App() {
     toggleTask,
     deleteTask,
     stats,
-  } = useTasks();
+  } = useTasks({ ensureLocationPermission: ensurePermission });
 
   const [modalVisible, setModalVisible] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
@@ -62,12 +66,13 @@ export default function App() {
       title: string,
       description: string,
       id?: string,
-      photo?: Photo | null
+      photo?: Photo | null,
+      location?: GeoLocation | null
     ): Promise<boolean> => {
       if (id) {
         return await editTask(id, title, description, photo);
       } else {
-        return await addTask(title, description, photo);
+        return await addTask(title, description, photo, location);
       }
     },
     [addTask, editTask]
@@ -158,6 +163,8 @@ export default function App() {
             photo={previewPhoto}
             onClose={() => setPreviewPhoto(null)}
           />
+
+          <PermissionRationale {...rationaleModalProps} />
         </View>
       </SafeAreaView>
     </SafeAreaProvider>

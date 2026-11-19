@@ -1,6 +1,12 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Photo, Task, TaskFilter } from '../types/task';
-import { photoFilesPort, taskStorage } from '../composition';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { GeoLocation, Photo, Task, TaskFilter } from '../types/task';
+import {
+  clock,
+  locationPort,
+  permissionPort,
+  photoFilesPort,
+  taskStorage,
+} from '../composition';
 import {
   validateAndCreateTask,
   updateTask,
@@ -9,9 +15,20 @@ import {
   filterTasks,
   computeTaskStats,
 } from '../domain/taskRules';
+import {
+  LocationPermissions,
+  createLocationService,
+} from '../services/locationService';
+import { enrichTaskLocationAsync } from '../services/taskEnricher';
+import { createPermissionService } from '../services/permissionService';
 
-export function useTasks() {
+export interface UseTasksOptions {
+  ensureLocationPermission?: LocationPermissions['ensure'];
+}
+
+export function useTasks(options?: UseTasksOptions) {
   const [tasks, setTasks] = useState<Task[]>([]);
+  const tasksRef = useRef<Task[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [filter, setFilter] = useState<TaskFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -23,6 +40,7 @@ export function useTasks() {
       setLoading(true);
       const loaded = await taskStorage.getTasks();
       if (isMounted) {
+        tasksRef.current = loaded;
         setTasks(loaded);
         setLoading(false);
       }
@@ -34,32 +52,73 @@ export function useTasks() {
 
   // Guardar en almacenamiento cada vez que cambien las tareas
   const persist = useCallback(async (updatedTasks: Task[]) => {
+    tasksRef.current = updatedTasks;
     setTasks(updatedTasks);
     await taskStorage.saveTasks(updatedTasks);
   }, []);
 
-  // Agregar nueva tarea
+  const applyFunctionalUpdate = useCallback(
+    async (updater: (currentTasks: Task[]) => Task[]): Promise<void> => {
+      const next = updater(tasksRef.current);
+      if (next === tasksRef.current) {
+        return;
+      }
+      tasksRef.current = next;
+      setTasks(next);
+      await taskStorage.saveTasks(next);
+    },
+    []
+  );
+
+  // Agregar nueva tarea (UI optimista + enriquecimiento GPS no bloqueante)
   const addTask = useCallback(
     async (
       title: string,
       description: string,
-      photo?: Photo | null
+      photo?: Photo | null,
+      preCapturedLocation?: GeoLocation | null
     ): Promise<boolean> => {
-      const res = validateAndCreateTask(title, description, tasks, {
+      const res = validateAndCreateTask(title, description, tasksRef.current, {
         ...(photo !== undefined ? { photo } : {}),
+        ...(preCapturedLocation !== undefined
+          ? { location: preCapturedLocation }
+          : {}),
       });
       if (!res.success || !res.task) {
         return false;
       }
 
-      const updated = [res.task, ...tasks];
+      const createdTask = res.task;
+      const updated = [createdTask, ...tasksRef.current];
       await persist(updated);
+
+      if (preCapturedLocation === undefined) {
+        const fallbackPermissions = createPermissionService(
+          permissionPort,
+          async () => false
+        );
+        const locationService = createLocationService({
+          locationPort,
+          permissions: {
+            ensure:
+              options?.ensureLocationPermission ?? fallbackPermissions.ensure,
+          },
+          clock,
+        });
+
+        void enrichTaskLocationAsync({
+          taskId: createdTask.id,
+          captureForNewTask: () => locationService.captureForNewTask(),
+          applyUpdate: applyFunctionalUpdate,
+        });
+      }
+
       return true;
     },
-    [tasks, persist]
+    [persist, applyFunctionalUpdate, options?.ensureLocationPermission]
   );
 
-  // Editar tarea existente
+  // Editar tarea existente (R6: ubicación inmutable)
   const editTask = useCallback(
     async (
       id: string,
@@ -67,8 +126,8 @@ export function useTasks() {
       description: string,
       photo?: Photo | null
     ): Promise<boolean> => {
-      const previousTask = tasks.find((t) => t.id === id);
-      const res = updateTask(id, title, description, tasks, {
+      const previousTask = tasksRef.current.find((t) => t.id === id);
+      const res = updateTask(id, title, description, tasksRef.current, {
         ...(photo !== undefined ? { photo } : {}),
       });
       if (!res.success) {
@@ -87,30 +146,30 @@ export function useTasks() {
 
       return true;
     },
-    [tasks, persist]
+    [persist]
   );
 
   // Alternar estado completada / pendiente
   const toggleTask = useCallback(
     async (id: string): Promise<void> => {
-      const updated = toggleTaskStatus(id, tasks);
+      const updated = toggleTaskStatus(id, tasksRef.current);
       await persist(updated);
     },
-    [tasks, persist]
+    [persist]
   );
 
   // Eliminar tarea (R7: borra también el archivo de foto asociado)
   const deleteTask = useCallback(
     async (id: string): Promise<void> => {
-      const target = tasks.find((t) => t.id === id);
-      const updated = deleteTaskById(id, tasks);
+      const target = tasksRef.current.find((t) => t.id === id);
+      const updated = deleteTaskById(id, tasksRef.current);
       await persist(updated);
 
       if (target?.photo?.uri) {
         await photoFilesPort.delete(target.photo.uri);
       }
     },
-    [tasks, persist]
+    [persist]
   );
 
   // Estadísticas calculadas

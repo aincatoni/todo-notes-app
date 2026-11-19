@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, Pressable, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Photo, Task } from '../types/task';
+import { LocationBadge } from './LocationBadge';
 
 interface TaskItemProps {
   task: Task;
@@ -100,6 +101,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({
                 : 'Foto (galería) • Tocar para ampliar'}
             </Text>
           </Pressable>
+        )}
+
+        {task.location && (
+          <LocationBadge location={task.location} compact={true} />
         )}
 
         <View style={styles.footerRow}>

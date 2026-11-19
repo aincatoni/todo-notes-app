@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PermissionOutcome, PermissionResource } from '../ports/permissions';
-import { Photo } from '../types/task';
+import { GeoLocation, Photo } from '../types/task';
+import { LocationBadge } from './LocationBadge';
 
 const OUTCOME_LABEL: Record<PermissionOutcome, string> = {
   granted: 'Concedido',
@@ -35,6 +36,9 @@ export interface PhotoNotice {
 
 export interface PhotoPickerProps {
   photo: Photo | null;
+  location?: GeoLocation | null;
+  locationLoading?: boolean;
+  isEditing?: boolean;
   busy: boolean;
   permissionOutcomes: Partial<Record<PermissionResource, PermissionOutcome>>;
   notice: PhotoNotice | null;
@@ -48,6 +52,9 @@ export interface PhotoPickerProps {
 
 export const PhotoPicker: React.FC<PhotoPickerProps> = ({
   photo,
+  location = null,
+  locationLoading = false,
+  isEditing = false,
   busy,
   permissionOutcomes,
   notice,
@@ -76,7 +83,9 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
         <Text style={styles.label}>
           Recursos del dispositivo (Cámara, Galería y GPS)
         </Text>
-        {busy && <ActivityIndicator size="small" color="#2563EB" />}
+        {(busy || locationLoading) && (
+          <ActivityIndicator size="small" color="#2563EB" />
+        )}
       </View>
 
       {photo && (
@@ -137,15 +146,16 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
       <View style={styles.permissionButtonsRow}>
         {RESOURCE_BUTTONS.map(({ action, label, icon }) => {
           const outcome = permissionOutcomes[action];
+          const isDisabled = busy || (action === 'location' && locationLoading);
           return (
             <Pressable
               key={action}
               onPress={() => handleResourcePress(action)}
-              disabled={busy}
+              disabled={isDisabled}
               style={({ pressed }) => [
                 styles.permissionButton,
                 pressed && styles.buttonPressed,
-                busy && styles.buttonDisabled,
+                isDisabled && styles.buttonDisabled,
               ]}
               accessibilityRole="button"
               accessibilityLabel={label}
@@ -168,6 +178,10 @@ export const PhotoPicker: React.FC<PhotoPickerProps> = ({
           );
         })}
       </View>
+
+      {location && (
+        <LocationBadge location={location} immutableHint={isEditing} />
+      )}
 
       {notice && (
         <View
