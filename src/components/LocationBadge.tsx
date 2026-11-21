@@ -153,8 +153,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#EFF6FF',
   },
   mapButtonCompact: {
-    minHeight: 36,
-    paddingVertical: 4,
+    minHeight: 44,
+    paddingVertical: 6,
   },
   mapButtonText: {
     fontSize: 12,

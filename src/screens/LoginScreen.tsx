@@ -33,12 +33,12 @@ const DEMO_ACCOUNTS = [
   {
     username: 'emilys',
     password: 'emilyspass',
-    label: 'emilys (Usuario 1)',
+    label: 'emilys (1)',
   },
   {
     username: 'michaelw',
     password: 'michaelwpass',
-    label: 'michaelw (Usuario 2)',
+    label: 'michaelw (2)',
   },
 ] as const;
 
@@ -123,7 +123,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingBottom: Math.max(28, insets.bottom + 20) },
+          { paddingBottom: Math.max(16, insets.bottom) },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -433,22 +433,22 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 28,
+    paddingTop: 14,
   },
   hero: {
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 14,
   },
   logoCircle: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     backgroundColor: '#EFF6FF',
     borderWidth: 1,
     borderColor: '#BFDBFE',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 12,
+    marginBottom: 8,
   },
   badgeText: {
     fontSize: 11,
@@ -588,8 +588,8 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   demoSection: {
-    marginTop: 18,
-    paddingTop: 14,
+    marginTop: 14,
+    paddingTop: 12,
     borderTopWidth: 1,
     borderTopColor: '#F1F5F9',
   },
@@ -601,14 +601,15 @@ const styles = StyleSheet.create({
   },
   demoRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
   },
   demoChip: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     minHeight: 44,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 10,
     backgroundColor: '#EFF6FF',

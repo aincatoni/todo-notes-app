@@ -17,9 +17,6 @@ export const Header: React.FC<HeaderProps> = ({
   onLogout,
   onOpenCreateModal,
 }) => {
-  const formattedUsername =
-    username && username.includes('@') ? username : `@${username ?? ''}`;
-
   return (
     <View style={styles.container}>
       {Boolean(username) && (
@@ -31,7 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
               color="#1E40AF"
             />
             <Text style={styles.userBadgeText} numberOfLines={1}>
-              {formattedUsername}
+              {username}
             </Text>
           </View>
 

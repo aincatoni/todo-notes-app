@@ -54,7 +54,12 @@ export const PhotoPreviewModal: React.FC<PhotoPreviewModalProps> = ({
         </Pressable>
       </View>
 
-      <Pressable style={styles.imageContainer} onPress={onClose}>
+      <Pressable
+        style={styles.imageContainer}
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="Cerrar foto ampliada"
+      >
         <Image
           source={{ uri: photo.uri }}
           style={styles.fullImage}

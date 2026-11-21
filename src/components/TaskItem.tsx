@@ -12,7 +12,17 @@ interface TaskItemProps {
   onPreviewPhoto?: (photo: Photo) => void;
 }
 
-export const TaskItem: React.FC<TaskItemProps> = ({
+function formatTaskDate(timestamp: number): string {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString('es-CL', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+const TaskItemComponent: React.FC<TaskItemProps> = ({
   task,
   onToggle,
   onEdit,
@@ -34,21 +44,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     );
   };
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('es-CL', {
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   return (
     <View style={[styles.card, task.completed && styles.cardCompleted]}>
       {/* Botón de toggle / Checkbox */}
       <Pressable
         onPress={() => onToggle(task.id)}
+        hitSlop={8}
         style={styles.checkboxTouchArea}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: task.completed }}
@@ -109,7 +110,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
         <View style={styles.footerRow}>
           <Ionicons name="time-outline" size={12} color="#94A3B8" />
-          <Text style={styles.dateText}>{formatDate(task.createdAt)}</Text>
+          <Text style={styles.dateText}>{formatTaskDate(task.createdAt)}</Text>
           {Boolean(task.updatedAt) && (
             <Text style={styles.editedBadge}>• editado</Text>
           )}
@@ -120,6 +121,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
       <View style={styles.actions}>
         <Pressable
           onPress={() => onEdit(task)}
+          hitSlop={4}
           style={({ pressed }) => [
             styles.actionButton,
             styles.editButton,
@@ -133,6 +135,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
         <Pressable
           onPress={handleDeletePress}
+          hitSlop={4}
           style={({ pressed }) => [
             styles.actionButton,
             styles.deleteButton,
@@ -147,6 +150,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     </View>
   );
 };
+
+export const TaskItem = React.memo(TaskItemComponent);
+TaskItem.displayName = 'TaskItem';
 
 const styles = StyleSheet.create({
   card: {

@@ -127,9 +127,27 @@ export default function App() {
     [addTask, editTask]
   );
 
+  const keyExtractor = useCallback((item: Task) => item.id, []);
+
+  const renderTaskItem = useCallback(
+    ({ item }: { item: Task }) => (
+      <TaskItem
+        task={item}
+        onToggle={toggleTask}
+        onEdit={handleOpenEdit}
+        onDelete={deleteTask}
+        onPreviewPhoto={setPreviewPhoto}
+      />
+    ),
+    [toggleTask, handleOpenEdit, deleteTask]
+  );
+
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
+      <SafeAreaView
+        style={styles.safeArea}
+        edges={['top', 'left', 'right', 'bottom']}
+      >
         <StatusBar style="dark" />
 
         {authInitializing ? (
@@ -173,16 +191,11 @@ export default function App() {
             ) : (
               <FlatList
                 data={filteredTasks}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                  <TaskItem
-                    task={item}
-                    onToggle={toggleTask}
-                    onEdit={handleOpenEdit}
-                    onDelete={deleteTask}
-                    onPreviewPhoto={setPreviewPhoto}
-                  />
-                )}
+                keyExtractor={keyExtractor}
+                renderItem={renderTaskItem}
+                initialNumToRender={10}
+                maxToRenderPerBatch={10}
+                windowSize={7}
                 ListEmptyComponent={
                   <EmptyState
                     filter={filter}
