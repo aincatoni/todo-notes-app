@@ -5,6 +5,8 @@ import {
   FlatList,
   ActivityIndicator,
   Pressable,
+  Alert,
+  Text,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import {
@@ -13,6 +15,7 @@ import {
 } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
+import { useAuth } from './src/hooks/useAuth';
 import { useTasks } from './src/hooks/useTasks';
 import { usePermissions } from './src/hooks/usePermissions';
 import { GeoLocation, Photo, Task } from './src/types/task';
@@ -23,8 +26,21 @@ import { TaskModal } from './src/components/TaskModal';
 import { EmptyState } from './src/components/EmptyState';
 import { PhotoPreviewModal } from './src/components/PhotoPreviewModal';
 import { PermissionRationale } from './src/components/PermissionRationale';
+import { LoginScreen } from './src/screens/LoginScreen';
 
 export default function App() {
+  const {
+    user,
+    initializing: authInitializing,
+    submitting: authSubmitting,
+    error: authError,
+    login,
+    register,
+    logout,
+    checkPendingSync,
+    clearError,
+  } = useAuth();
+
   const { ensurePermission, rationaleModalProps } = usePermissions();
 
   const {
@@ -40,7 +56,10 @@ export default function App() {
     toggleTask,
     deleteTask,
     stats,
-  } = useTasks({ ensureLocationPermission: ensurePermission });
+  } = useTasks({
+    userId: user?.id ?? 'local',
+    ensureLocationPermission: ensurePermission,
+  });
 
   const [modalVisible, setModalVisible] = useState(false);
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
@@ -60,6 +79,36 @@ export default function App() {
     setModalVisible(false);
     setTaskToEdit(null);
   }, []);
+
+  const handlePerformLogout = useCallback(async () => {
+    setModalVisible(false);
+    setTaskToEdit(null);
+    setPreviewPhoto(null);
+    await logout();
+  }, [logout]);
+
+  const handleLogout = useCallback(async () => {
+    const hasPending = await checkPendingSync();
+    if (hasPending) {
+      Alert.alert(
+        'Cambios pendientes de sincronizar',
+        'Tienes operaciones pendientes en la cola. Tus tareas locales se conservarán para cuando vuelvas a iniciar sesión. ¿Deseas cerrar sesión?',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          {
+            text: 'Cerrar sesión',
+            style: 'destructive',
+            onPress: () => {
+              void handlePerformLogout();
+            },
+          },
+        ]
+      );
+      return;
+    }
+
+    await handlePerformLogout();
+  }, [checkPendingSync, handlePerformLogout]);
 
   const handleSubmitTask = useCallback(
     async (
@@ -83,89 +132,107 @@ export default function App() {
       <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         <StatusBar style="dark" />
 
-        <View style={styles.screen}>
-          {/* Encabezado Principal */}
-          <Header
-            totalCount={stats.total}
-            pendingCount={stats.pending}
-            onOpenCreateModal={handleOpenCreate}
+        {authInitializing ? (
+          <View style={styles.authLoadingContainer}>
+            <ActivityIndicator size="large" color="#2563EB" />
+            <Text style={styles.authLoadingText}>Verificando sesión...</Text>
+          </View>
+        ) : !user ? (
+          <LoginScreen
+            submitting={authSubmitting}
+            error={authError}
+            onLogin={login}
+            onRegister={register}
+            onClearError={clearError}
           />
-
-          {/* Barra de Filtros y Búsqueda */}
-          <TaskFilterBar
-            filter={filter}
-            onSelectFilter={setFilter}
-            searchQuery={searchQuery}
-            onSearchChange={setSearchQuery}
-            counts={stats}
-          />
-
-          {/* Contenido / Lista de Tareas */}
-          {loading ? (
-            <View style={styles.loadingContainer}>
-              <ActivityIndicator size="large" color="#2563EB" />
-            </View>
-          ) : (
-            <FlatList
-              data={filteredTasks}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <TaskItem
-                  task={item}
-                  onToggle={toggleTask}
-                  onEdit={handleOpenEdit}
-                  onDelete={deleteTask}
-                  onPreviewPhoto={setPreviewPhoto}
-                />
-              )}
-              ListEmptyComponent={
-                <EmptyState
-                  filter={filter}
-                  hasSearchQuery={searchQuery.length > 0}
-                  onOpenCreate={handleOpenCreate}
-                  onResetFilter={() => {
-                    setSearchQuery('');
-                    setFilter('all');
-                  }}
-                />
-              }
-              contentContainerStyle={styles.listContent}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
+        ) : (
+          <View style={styles.screen}>
+            {/* Encabezado Principal */}
+            <Header
+              totalCount={stats.total}
+              pendingCount={stats.pending}
+              username={user.username}
+              onLogout={() => void handleLogout()}
+              onOpenCreateModal={handleOpenCreate}
             />
-          )}
 
-          {/* Botón Flotante de Acción (FAB) para ergonomía táctil */}
-          {tasks.length > 0 && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.fab,
-                pressed && styles.fabPressed,
-              ]}
-              onPress={handleOpenCreate}
-              accessibilityRole="button"
-              accessibilityLabel="Crear nueva tarea"
-            >
-              <Ionicons name="add" size={28} color="#FFFFFF" />
-            </Pressable>
-          )}
+            {/* Barra de Filtros y Búsqueda */}
+            <TaskFilterBar
+              filter={filter}
+              onSelectFilter={setFilter}
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              counts={stats}
+            />
 
-          {/* Modal para Crear y Editar Tareas */}
-          <TaskModal
-            visible={modalVisible}
-            onClose={handleCloseModal}
-            onSubmit={handleSubmitTask}
-            taskToEdit={taskToEdit}
-          />
+            {/* Contenido / Lista de Tareas */}
+            {loading ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#2563EB" />
+              </View>
+            ) : (
+              <FlatList
+                data={filteredTasks}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <TaskItem
+                    task={item}
+                    onToggle={toggleTask}
+                    onEdit={handleOpenEdit}
+                    onDelete={deleteTask}
+                    onPreviewPhoto={setPreviewPhoto}
+                  />
+                )}
+                ListEmptyComponent={
+                  <EmptyState
+                    filter={filter}
+                    hasSearchQuery={searchQuery.length > 0}
+                    onOpenCreate={handleOpenCreate}
+                    onResetFilter={() => {
+                      setSearchQuery('');
+                      setFilter('all');
+                    }}
+                  />
+                }
+                contentContainerStyle={styles.listContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              />
+            )}
 
-          <PhotoPreviewModal
-            visible={Boolean(previewPhoto)}
-            photo={previewPhoto}
-            onClose={() => setPreviewPhoto(null)}
-          />
+            {/* Botón Flotante de Acción (FAB) para ergonomía táctil */}
+            {tasks.length > 0 && (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.fab,
+                  pressed && styles.fabPressed,
+                ]}
+                onPress={handleOpenCreate}
+                accessibilityRole="button"
+                accessibilityLabel="Crear nueva tarea"
+              >
+                <Ionicons name="add" size={28} color="#FFFFFF" />
+              </Pressable>
+            )}
 
-          <PermissionRationale {...rationaleModalProps} />
-        </View>
+            {/* Modal para Crear y Editar Tareas */}
+            <TaskModal
+              visible={modalVisible}
+              userId={user.id}
+              onClose={handleCloseModal}
+              onSubmit={handleSubmitTask}
+              taskToEdit={taskToEdit}
+            />
+
+            <PhotoPreviewModal
+              visible={Boolean(previewPhoto)}
+              photo={previewPhoto}
+              onClose={() => setPreviewPhoto(null)}
+            />
+
+            <PermissionRationale {...rationaleModalProps} />
+          </View>
+        )}
       </SafeAreaView>
     </SafeAreaProvider>
   );
@@ -175,6 +242,18 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#FFFFFF',
+  },
+  authLoadingContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8FAFC',
+    gap: 12,
+  },
+  authLoadingText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#64748B',
   },
   screen: {
     flex: 1,

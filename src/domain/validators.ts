@@ -7,7 +7,7 @@ export type ValidationResult<T> =
 const TITLE_MAX_LENGTH = 80;
 const DESCRIPTION_MAX_LENGTH = 500;
 const PASSWORD_MIN_LENGTH = 6;
-const USERNAME_PATTERN = /^[a-zA-Z0-9._-]{3,30}$/;
+const USERNAME_PATTERN = /^[a-zA-Z0-9._@-]{3,30}$/;
 
 export function validateTitle(title: string): ValidationResult<string> {
   const trimmed = title.trim();

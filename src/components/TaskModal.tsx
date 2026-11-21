@@ -31,6 +31,7 @@ import { isAppError } from '../domain/errors';
 
 interface TaskModalProps {
   visible: boolean;
+  userId?: string;
   onClose: () => void;
   onSubmit: (
     title: string,
@@ -43,6 +44,7 @@ interface TaskModalProps {
 }
 
 interface TaskModalContentProps {
+  userId: string;
   onClose: () => void;
   onSubmit: (
     title: string,
@@ -55,6 +57,7 @@ interface TaskModalContentProps {
 }
 
 const TaskModalContent: React.FC<TaskModalContentProps> = ({
+  userId,
   onClose,
   onSubmit,
   taskToEdit,
@@ -170,12 +173,12 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
       const captured =
         source === 'camera'
           ? await photoService.captureFromCamera({
-              userId: 'local',
+              userId,
               taskId: draftTaskId,
               previousPhoto: tempPrevious,
             })
           : await photoService.pickFromGallery({
-              userId: 'local',
+              userId,
               taskId: draftTaskId,
               previousPhoto: tempPrevious,
             });
@@ -521,6 +524,7 @@ const TaskModalContent: React.FC<TaskModalContentProps> = ({
 
 export const TaskModal: React.FC<TaskModalProps> = ({
   visible,
+  userId = 'local',
   onClose,
   onSubmit,
   taskToEdit,
@@ -534,7 +538,8 @@ export const TaskModal: React.FC<TaskModalProps> = ({
     >
       {visible ? (
         <TaskModalContent
-          key={taskToEdit?.id ?? 'new'}
+          key={`${userId}-${taskToEdit?.id ?? 'new'}`}
+          userId={userId}
           onClose={onClose}
           onSubmit={onSubmit}
           taskToEdit={taskToEdit}
