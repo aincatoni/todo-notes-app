@@ -62,6 +62,7 @@ describe('Validadores de dominio (Domain §6 y R19)', () => {
       { name: '30 caracteres', input: 'a'.repeat(30) },
       { name: 'usuario alfanumérico con . _ -', input: 'user_1.test-2' },
       { name: 'usuario DummyJSON', input: 'emilys' },
+      { name: 'formato correo con @', input: 'ain@ipss.cl' },
     ])('acepta usuario válido: $name', ({ input }) => {
       const result = validateUsername(input);
       expect(result).toEqual({ valid: true, value: input });
@@ -72,7 +73,7 @@ describe('Validadores de dominio (Domain §6 y R19)', () => {
       { name: '2 caracteres', input: 'ab' },
       { name: '31 caracteres', input: 'a'.repeat(31) },
       { name: 'con espacios', input: 'user name' },
-      { name: 'con símbolo @', input: 'user@mail' },
+      { name: 'con caracteres inválidos', input: 'user$name!' },
     ])('rechaza usuario inválido: $name', ({ input }) => {
       const result = validateUsername(input);
       expect(result).toEqual({

@@ -3,7 +3,7 @@ import { FakeKeyValueStore } from './fakes/FakeKeyValueStore';
 import { aTask } from './builders';
 import { createTaskStorage } from '../storage/taskStorage';
 import { SyncOperation } from '../types/task';
-import { User } from '../types/auth';
+import { LocalAccount, User } from '../types/auth';
 
 describe('taskStorage sobre KeyValueStore (R2, B2, B5, Domain §8)', () => {
   let store: FakeKeyValueStore;
@@ -148,5 +148,49 @@ describe('taskStorage sobre KeyValueStore (R2, B2, B5, Domain §8)', () => {
 
     await storage.saveLastUser(null);
     expect(await storage.getLastUser()).toBeNull();
+  });
+
+  it('inicializa users_v1 con las 2 cuentas semilla cuando aún no existe', async () => {
+    const storage = createTaskStorage(store);
+
+    const accounts = await storage.getAccounts();
+
+    expect(accounts).toHaveLength(2);
+    expect(accounts.map((a) => a.username)).toEqual(['emilys', 'michaelw']);
+    expect(accounts[0]).toMatchObject({
+      id: '1',
+      username: 'emilys',
+      password: 'emilyspass',
+      displayName: 'Emily Johnson',
+    });
+    expect(accounts[1]).toMatchObject({
+      id: '2',
+      username: 'michaelw',
+      password: 'michaelwpass',
+      displayName: 'Michael Williams',
+    });
+    expect(await store.get('users_v1')).not.toBeNull();
+  });
+
+  it('persiste nuevas cuentas locales en users_v1 y tolera JSON corrupto sin lanzar error', async () => {
+    const storage = createTaskStorage(store);
+    const seeds = await storage.getAccounts();
+    const customAccount: LocalAccount = {
+      id: 'user-3',
+      username: 'ain@ipss.cl',
+      password: 'miPassword123',
+      displayName: 'Ain Catoni',
+      createdAt: 1700000000000,
+    };
+
+    await storage.saveAccounts([...seeds, customAccount]);
+
+    const loaded = await storage.getAccounts();
+    expect(loaded).toHaveLength(3);
+    expect(loaded[2]).toEqual(customAccount);
+
+    await store.set('users_v1', '{corrupt-users-json');
+    const fallback = await storage.getAccounts();
+    expect(fallback.map((a) => a.username)).toEqual(['emilys', 'michaelw']);
   });
 });
