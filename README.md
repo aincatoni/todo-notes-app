@@ -1,385 +1,298 @@
-# EVALUACIÓN SUMATIVA UNIDAD Nº 1
-## DESARROLLO DE APLICACIONES MÓVILES
+# EVALUACIÓN SUMATIVA UNIDAD Nº 2 — *"Los recursos son muchos"*
+## DESARROLLO DE APLICACIONES MÓVILES (`todo-notes-app` v2)
 
 ---
 
 ### DATOS DE IDENTIFICACIÓN
 * **Institución:** Instituto Profesional San Sebastián (IPSS)
-* **Carrera:** Ingeniería en Conectividad y Redes / Informática
 * **Asignatura:** Desarrollo de Aplicaciones Móviles
-* **Unidad Temática:** Unidad 1 – Introducción al Desarrollo Móvil y Frameworks Multiplataforma
-* **Docente:** Boris Belmar
-* **Estudiante(s):** Ain Catoni - Pía Alarcón
-* **Año Lectivo:** 2026
+* **Unidad Temática:** Unidad 2 – Conexión con APIs Internas y Periféricos del Dispositivo
+* **Docente:** Boris Marcelo Belmar Muñoz
+* **Estudiantes:** Pía Alarcón - Ain Cortés
+* **Año:** 2026
+* **Base evolutiva:** `todo-notes-app` Unidad 1 (tag Git `entrega-u1`, rama de trabajo `unidad2`)
 
 ---
 
-## 1. INTRODUCCIÓN Y ALCANCE DEL PROYECTO
+## 1. INTRODUCCIÓN, ALCANCE CONFIRMADO Y EQUIVALENCIA TECNOLÓGICA
 
-El presente proyecto corresponde al desarrollo de una aplicación móvil para la gestión de notas y tareas pendientes (**To-Do List**), diseñada e implementada sobre el ecosistema **React Native** con **Expo (SDK 58)** y **TypeScript**. La solución permite a los usuarios registrar, visualizar, editar y eliminar tareas de manera fluida, cumpliendo rigurosamente con los requisitos funcionales del encargo y los estándares de calidad visual y arquitectónica estipulados en la rúbrica de evaluación.
+### 1.1. Evolución desde la Unidad 1 y alcance de evaluación
+Partiendo de la aplicación To-Do List de la Unidad 1 (CRUD local con React Native, Expo SDK 58 y TypeScript), esta entrega evoluciona el proyecto hacia una aplicación móvil **multiusuario, offline-first y orientada a APIs internas y periféricos del dispositivo**:
 
-### Objetivos Principales:
-1. Desarrollar un sistema de gestión de tareas con operaciones completas **CRUD** (Crear, Leer, Actualizar y Eliminar).
-2. Estructurar cada elemento de información mediante un modelo formal compuesto por `id`, `title`, `description`, `completed`, `createdAt` y `updatedAt`.
-3. Implementar una interfaz gráfica móvil reactiva que respete principios ergonómicos de usabilidad, jerarquía visual, contraste y ritmo espacial.
-4. Gestionar el estado de manera desacoplada mediante un **Custom Hook** (`useTasks`) y persistencia local asíncrona a través de `@react-native-async-storage/async-storage`.
+* **Alcance confirmado por el docente (19–20 nov 2026):** la evaluación se centra exclusivamente en la integración con **APIs internas del dispositivo** (cámara, galería, sistema de archivos privado, GPS/mapas, permisos nativos, almacenamiento local `AsyncStorage` y almacenamiento seguro `expo-secure-store`), operando **100 % dentro del dispositivo** incluso en modo avión, sin depender de servicios web externos.
+* **Conservación sin regresiones:** se preservan todas las capacidades de la Unidad 1 (crear, editar, completar, eliminar con confirmación nativa, filtrar por estado y buscar en tiempo real), protegidas por la suite de regresión `src/__tests__/taskLogic.test.ts` (13 pruebas).
 
----
+### 1.2. Justificación técnica del stack moderno (React Native + Expo SDK 58 vs. Ionic/Capacitor)
+Aunque el enunciado referencial menciona Ionic/Capacitor, el proyecto se diseñó e implementó sobre **React Native 0.88 + Expo SDK 58** (React 19, TypeScript estricto y Bun) por razones técnicas y de vigencia en la industria móvil actual:
 
-## 2. ARQUITECTURA Y CONCEPTOS FUNDAMENTALES DEL FRAMEWORK (INDICADOR 1 - 14 PTS)
+* **Renderizado nativo real frente a WebView:** a diferencia de Ionic/Capacitor (que envuelve una aplicación HTML/CSS dentro de un `WebView`), React Native compila la interfaz a componentes nativos reales del sistema operativo (`UIView` en iOS y `ViewGroup` en Android) mediante la **Nueva Arquitectura** (JSI en C++, *Fabric Renderer*, *TurboModules* y bytecode AOT en *Hermes*), ofreciendo menor latencia en listas, animaciones, teclado y periféricos.
+* **Ecosistema moderno y soporte de primera mano para APIs del dispositivo:** Expo SDK 58 provee módulos nativos oficiales, tipados en TypeScript y mantenidos de forma unificada (`expo-image-picker`, `expo-location`, `expo-file-system`, `expo-secure-store`, `expo-network`), además de configuración declarativa de permisos en `app.json` (*Continuous Native Generation*).
+* **Vigencia laboral y continuidad con la Unidad 1:** React Native + Expo es hoy uno de los estándares predominantes en desarrollo móvil multiplataforma y permite evolucionar directamente la base de `todo-notes-app` construida en la Unidad 1 sin reescribir la aplicación.
 
-React Native es un marco de desarrollo móvil multiplataforma que permite compilar código JavaScript/TypeScript en componentes de interfaz nativos tanto para **iOS** como para **Android**, garantizando un rendimiento cercano a las aplicaciones desarrolladas en Swift o Kotlin.
+Para trazabilidad directa con los recursos solicitados en la evaluación, la siguiente tabla resume la equivalencia funcional:
 
-```
-+-------------------------------------------------------------------+
-|                     CAPA DE JAVASCRIPT / REACT                     |
-|  - Componentes (Header, TaskItem, TaskModal, TaskFilterBar)       |
-|  - Custom Hook (useTasks) y Estado Reactivo (useState, useMemo)   |
-|  - Tipado Estricto TypeScript (Task, TaskFilter, TaskFormData)     |
-+-------------------------------------------------------------------+
-                                  │
-                                  ▼ (JSI - JavaScript Interface)
-+-------------------------------------------------------------------+
-|               NUEVA ARQUITECTURA (REACT NATIVE SDK 58)             |
-|  ┌─────────────────────────────┐   ┌───────────────────────────┐  |
-|  │       Fabric Renderer       │   │       TurboModules        │  |
-|  │  (Renderizado Directo C++)  │   │  (Llamadas Nativas Sync)  │  |
-|  └─────────────────────────────┘   └───────────────────────────┘  |
-|                      Motor Hermes (Bytecode AOT)                  |
-+-------------------------------------------------------------------+
-                                  │
-                                  ▼
-+-------------------------------------------------------------------+
-|                    CAPA NATIVA DEL SISTEMA OPERATIVO              |
-|        iOS: UIView, UITextField, UIAccessibility, UIAlert         |
-|      Android: View, EditText, AccessibilityDelegate, Dialog       |
-+-------------------------------------------------------------------+
-```
-
-### 2.1. Arquitectura de Nueva Generación (Fabric & TurboModules en SDK 58)
-A diferencia de las versiones históricas de React Native que dependían de un "puente asíncrono serializado en JSON" (The Bridge), el cual introducía cuellos de botella en listas con gran densidad de datos, **Expo SDK 58** ejecuta la **Nueva Arquitectura por defecto**:
-1. **JavaScript Interface (JSI):** Enlace directo en C++ entre el hilo de JavaScript y el entorno nativo del host, permitiendo llamadas síncronas de memoria compartida sin serialización de cadenas JSON.
-2. **Fabric Renderer:** Sistema de renderizado en C++ que unifica la creación de árboles de componentes nativos, posibilitando transiciones visuales inmediatas y renderizado concurrente de React 19.
-3. **TurboModules:** Carga perezosa (*lazy loading*) de módulos nativos del dispositivo (sensores, almacenamiento, hápticos), mejorando el tiempo de arranque de la aplicación.
-4. **Hermes Engine:** Motor JavaScript optimizado para dispositivos móviles que compila el código fuente a bytecode en tiempo de construcción (*Ahead-of-Time*), reduciendo el consumo de memoria RAM y el tiempo de inicio en frío (*Time to Interactive*).
-
-### 2.2. Componentes Clave y Terminología Técnica
-
-| Componente / Concepto | Rol en la Arquitectura | Aplicación Concreta en el Proyecto |
+| Recurso de referencia (Ionic/Capacitor) | Equivalente moderno en Expo SDK 58 | Rol técnico en `todo-notes-app` v2 |
 | :--- | :--- | :--- |
-| **`View`** | Contenedor estructural nativo equivalente a `<div>` en web o `UIView`/`ViewGroup`. | Estructuración de tarjetas de tareas, filas de acciones y contenedores modales. |
-| **`Text`** | Componente nativo de renderizado tipográfico accesible. | Despliegue de títulos jerárquicos, descripciones y badges temporales. |
-| **`TextInput`** | Control nativo de entrada de texto interactivo con eventos de teclado. | Formulario de captura para `title` y `description` con autoenfoque y límite de caracteres. |
-| **`Pressable`** | Primitiva táctil avanzada que provee estados `pressed`, `hover` y accesibilidad. | Botones de agregar, editar, eliminar y checkbox de completado con feedback visual táctil. |
-| **`FlatList`** | Lista virtualizada que recicla vistas en memoria para alto rendimiento en pantallas móviles. | Renderizado eficiente de las tareas filtradas, integrando `keyExtractor` y `ListEmptyComponent`. |
-| **`Modal`** | Vista superpuesta nativa presentada sobre el contexto actual. | Diálogo accesible para creación y edición de tareas sin navegación forzada. |
-| **`Alert`** | Invocación al diálogo de sistema nativo (`UIAlertController` en iOS / `AlertDialog` en Android). | Confirmación destructiva antes de eliminar permanentemente una tarea. |
-| **`SafeAreaView`** | Contenedor que calcula los márgenes físicos (*insets*) del dispositivo. | Protección de la interfaz contra colisiones con la barra de estado y la Dynamic Island. |
+| **`@capacitor/camera`** | **`expo-image-picker`** (`launchCameraAsync`, `launchImageLibraryAsync`) | Captura de fotos con cámara y selección desde galería con compresión (`quality: 0.7`). |
+| **`@capacitor/geolocation`** | **`expo-location`** (`getCurrentPositionAsync`, `watchPositionAsync`, `enableNetworkProviderAsync`) | Captura automática de GPS al crear tarea, precisión en metros (`±m`), timeout propio de `10 s` y apertura en Mapas nativos. |
+| **`@capacitor/preferences`** | **`@react-native-async-storage/async-storage`** | Persistencia local aislada por usuario (`tasks_v2:<userId>`, `users_v1`, `lastUser_v1`) y migración única U1→U2. |
+| **`@capacitor/filesystem`** | **`expo-file-system`** (`File`, `Directory`, `Paths.document`) | Almacenamiento privado de imágenes en `photos/<userId>/<taskId>-<ts>.jpg` con limpieza automática al reemplazar o eliminar. |
+| **Almacenamiento seguro de sesión** | **`expo-secure-store`** (Keychain iOS / Keystore Android) | Resguardo cifrado de la sesión activa (`session_v1`), persistente al reiniciar incluso en modo avión. |
+| **Detección de red** | **`expo-network`** | Detección del estado de conectividad para continuidad offline. |
+| **Pruebas unitarias (Jest/Jasmine)** | **`bun test --coverage`** | 155 pruebas TDD en ~30 ms con arquitectura de Puertos y Adaptadores y dobles de prueba (*fakes*). |
 
 ---
 
-## 3. PATRONES DE DISEÑO IMPLEMENTADOS (INDICADOR 2 - 18 PTS)
+## 2. ARQUITECTURA DE PUERTOS Y ADAPTADORES
 
-Para garantizar mantenibilidad, testabilidad y escalabilidad, el proyecto implementa patrones de diseño centrales del desarrollo en React y React Native:
+Para desacoplar completamente la lógica de negocio de las APIs nativas de Expo y garantizar una cobertura de pruebas automatizadas superior al 97 %, el proyecto aplica la arquitectura de **Puertos y Adaptadores (Arquitectura Hexagonal)**:
 
-### 3.1. Patrón Custom Hook (Separación de Negocio y Presentación)
-La lógica de negocio, validación, cálculo de métricas y persistencia asíncrona se encuentra totalmente encapsulada en el hook personalizado `useTasks()`. Los componentes visuales consumen únicamente funciones e interfaces, sin acoplamiento a las APIs de almacenamiento:
-
-```typescript
-// src/hooks/useTasks.ts
-export function useTasks() {
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [filter, setFilter] = useState<TaskFilter>('all');
-
-  const addTask = useCallback(async (title: string, description: string) => {
-    const newTask: Task = {
-      id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      title: title.trim(),
-      description: description.trim(),
-      completed: false,
-      createdAt: Date.now(),
-    };
-    const updated = [newTask, ...tasks];
-    await persist(updated);
-    return true;
-  }, [tasks, persist]);
-
-  return { tasks, filteredTasks, addTask, editTask, toggleTask, deleteTask, stats };
-}
+```mermaid
+flowchart TD
+  UI["Capa UI: App.tsx, LoginScreen.tsx, components/"] --> H["Custom Hooks: useAuth, useTasks, usePermissions"]
+  H --> S["Dominio y Servicios Puros: taskRules, validators, errors, permissionService, photoService, locationService, taskEnricher, authService"]
+  S --> P["Puertos (Interfaces): PermissionPort, CameraPort, LocationPort, PhotoFiles, KeyValueStore, SecureStore, NetworkPort, Clock, IdGenerator"]
+  P --> A["Adaptadores Nativos Expo/RN: expoPermissions, expoCamera, fileSystemPhotos, expoLocation, asyncStorageStore, secureSessionStore, expoNetwork"]
+  P -.-> F["Dobles de Prueba (bun test): FakePermissions, FakeCamera, FakeLocation, FakePhotoFiles, FakeKeyValueStore, FakeSecureStore, FakeNetwork, FakeClock"]
 ```
 
-### 3.2. Patrón Container / Presentational Components
-* **Componentes Presentacionales (Puros):** `Header`, `TaskItem`, `TaskFilterBar` y `EmptyState` reciben sus datos exclusivamente por `props` y emiten eventos mediante callbacks tipados. No tienen efectos colaterales.
-* **Componente Contenedor (Orquestador):** `App.tsx` orquesta el ciclo de vida, la visibilidad de los diálogos y la inyección de dependencias entre el hook y los componentes hijos.
+La capa `src/domain/`, `src/services/` y `src/storage/` **no importa** `react-native` ni módulos `expo-*`. La inyección de dependencias reales se centraliza en `src/composition.ts`.
 
-### 3.3. Patrón de Componentes Controlados (Controlled Components)
-En el formulario modal (`TaskModal.tsx`), el estado de los inputs de texto está sincronizado bidireccionalmente con el estado local de React, lo que permite validación reactiva en tiempo real, conteo de caracteres remanentes y limpieza inmediata tras el envío:
+### 2.1. Estructura de módulos del proyecto
 
-```typescript
-// src/components/TaskModal.tsx
-<TextInput
-  style={[styles.input, Boolean(errorMessage) && styles.inputError]}
-  value={title}
-  onChangeText={(text) => {
-    setTitle(text);
-    if (errorMessage) setErrorMessage('');
-  }}
-  placeholder="Título de la tarea"
-  maxLength={80}
-/>
-```
-
-### 3.4. Flujo de Datos Unidireccional e Inmutabilidad
-Todas las mutaciones de datos en la colección de tareas se realizan mediante operaciones inmutables (`map`, `filter`, spread operator `[...]`), previniendo estados inconsistentes o bugs de re-renderizado:
-
-```typescript
-// Eliminación inmutable
-const updated = tasks.filter((t) => t.id !== id);
-// Edición inmutable
-const updated = tasks.map((t) => t.id === id ? { ...t, title, description, updatedAt: Date.now() } : t);
-```
-
----
-
-## 4. PRINCIPIOS DE DISEÑO DE UI MÓVIL APLICADOS (INDICADOR 3 - 12 PTS)
-
-La interfaz fue construida siguiendo los estándares de diseño contemporáneos para sistemas operativos móviles (**Apple Human Interface Guidelines** y **Material Design 3**):
-
-```
-+-------------------------------------------------------------+
-| [EVA1 • IPSS 2026]                                          | <- Tag jerárquico secundario
-| Mis Notas y Tareas                       [+ Nueva] (Primario)| <- H1 prominente + Botón acento
-| 2 pendientes de 3                                           | <- Subtítulo informativo
-+-------------------------------------------------------------+
-| [ Q Buscar tareas...                           ]            | <- Input con icono y affordance
-| [ Todas (3) ]  [ Pendientes (2) ]  [ Completadas (1) ]      | <- Segmented bar (Ritmo 8pt)
-+-------------------------------------------------------------+
-| +---------------------------------------------------------+ |
-| | [ ] Diseñar interfaz de usuario (UI)       [✎] [🗑]    | | <- Card con contraste elevado
-| |     Implementar lista, modales y feedback...           | | <- Descripción atenuada
-| |     ⏱ 10:45 AM                                          | | <- Timestamp secundario
-| +---------------------------------------------------------+ |
-|                                             ┌───────────┐   |
-|                                             │  ( + )    │   | <- FAB flotante ergonómico
-|                                             └───────────┘   |    (Área táctil ≥ 48pt)
-+-------------------------------------------------------------+
-```
-
-1. **Jerarquía Visual:**
-   * Títulos en peso extra-negrita (`fontWeight: '800'`) y tamaño 24pt para anclaje visual primario.
-   * Descripciones en tono pizarra (`#475569`, 14pt) y metadatos en tipografía pequeña (`#94A3B8`, 11pt).
-   * Distinción clara entre tareas pendientes (activas con fondo blanco) y tareas completadas (fondo tenue `#F8FAFC`, texto tachado `line-through` y opacidad reducida).
-2. **Balance y Espacio en Blanco:**
-   * Márgenes laterales simétricos de 20pt que evitan saturación en bordes de pantalla curva o redondeada.
-   * Separación vertical entre tarjetas mediante `marginBottom: 12pt`.
-3. **Contraste Accesible (WCAG 2.1 AA):**
-   * Texto de alto contraste `#0F172A` sobre fondos blancos `#FFFFFF` (ratio de contraste superior a 12:1).
-   * Color acento `#2563EB` (Azul Real) para acciones primarias constructivas.
-   * Color semántico `#10B981` (Verde Esmeralda) para confirmación de tareas completadas.
-   * Color destructivo `#DC2626` (Rojo Carmesí) claramente diferenciado para la acción de eliminación.
-4. **Ritmo y Proporción (Grid de 8 Puntos):**
-   * Todas las dimensiones, paddings, gaps y radios de borde se calculan en múltiplos estándar (4pt, 8pt, 12pt, 16pt, 24pt).
-   * Radio de curvatura de 14pt en tarjetas y 24pt en botones píldora.
-5. **Ergonomía Táctil (*Touch Target Sizes*):**
-   * Todos los elementos interactivos (checkbox, botón de eliminar, botón de editar y botón flotante) poseen áreas mínimas de contacto de **44x44 pt** o superiores, previniendo pulsaciones accidentales.
-
----
-
-## 5. IMPLEMENTACIÓN DE COMPONENTES DE UI Y FUNCIONALIDADES (INDICADOR 4 - 28 PTS)
-
-La aplicación integra de forma robusta todos los requerimientos obligatorios de la rúbrica y las características del encargo sumativo:
-
-### 5.1. Lista de Tareas y Renderizado Dinámico
-* Se utiliza `FlatList` con optimización de memoria.
-* Cada tarea muestra su título, descripción detallada, fecha/hora formateada localmente en español de Chile (`es-CL`) y badge de modificación si fue editada.
-* Selector de alternancia (checkbox táctil) con icono de confirmación vectorial `Ionicons`.
-
-### 5.2. Formulario de Captura y Edición (Modal Dual)
-* **Modo Creación:** Abre el formulario con inputs limpios y foco automático en el título.
-* **Modo Edición:** Pre-carga el título y la descripción existentes de la tarea seleccionada.
-* **Limpieza de Campos:** Tras registrar exitosamente una tarea, los campos se vacían automáticamente y el modal se cierra de forma fluida.
-* **Control de Teclado:** Se implementa `KeyboardAvoidingView` adaptativa según el sistema operativo (`padding` en iOS y `height` en Android) para evitar que el teclado cubra los botones de acción.
-
-### 5.3. Eliminación Segura con Confirmación Nativa
-* Cada elemento de la lista cuenta con un botón de eliminar con icono de cesto de basura (`trash-outline`).
-* Al presionarlo, la app no borra inmediatamente; dispara un diálogo nativo `Alert.alert` que exige confirmación explícita del usuario (`Cancelar` / `Eliminar`), protegiendo al usuario de pérdidas accidentales de datos.
-
-### 5.4. Barra de Filtros y Búsqueda en Vivo
-* Pestañas segmentadas con contadores en tiempo real: **Todas**, **Pendientes** y **Completadas**.
-* Barra de búsqueda reactiva que filtra por coincidencia de texto tanto en el título como en la descripción de las tareas.
-
----
-
-## 6. USABILIDAD Y EXPERIENCIA DE USUARIO (INDICADOR 5 - 28 PTS)
-
-1. **Affordance y Microinteracciones:**
-   * Los botones utilizan la propiedad `pressed` de `Pressable` para proveer retroalimentación visual inmediata (reducción de escala sutil `transform: [{ scale: 0.95 }]` y atenuación de opacidad).
-2. **Prevención y Manejo de Errores:**
-   * Si el usuario intenta guardar una tarea con el título vacío o compuesto solo por espacios, se despliega un banner de validación en color rojo dentro del modal (`"El título de la tarea es obligatorio"`), sin cerrar el formulario ni perder el contenido de la descripción.
-3. **Estados Vacíos (*Empty States* Contextuales):**
-   * El componente `EmptyState` muestra un icono y mensaje diferenciado según la situación del usuario:
-     * Si no hay ninguna tarea: invita a crear la primera nota con un botón directo.
-     * Si no hay pendientes: felicita al usuario por tener sus pendientes al día.
-     * Si no hay tareas completadas: orienta sobre cómo marcar una tarea.
-     * Si la búsqueda no arroja resultados: ofrece un botón para limpiar el texto buscado.
-4. **Persistencia Local y Resiliencia:**
-   * Los datos se almacenan en el almacenamiento local del dispositivo mediante `AsyncStorage` bajo la clave `@ipss_todo_app:tasks_v1`. Al cerrar o reiniciar la aplicación, los datos se preservan intactos.
-   * Se incluye un mecanismo de inicialización controlada (*seed data*) con tareas demostrativas al ejecutar por primera vez.
-
----
-
-## 7. ESTRUCTURA DEL PROYECTO
-
-```
-Entrega/todo-notes-app/
-├── App.tsx                     # Orquestador raíz con SafeAreaProvider y StatusBar
-├── app.json                    # Manifiesto de configuración de Expo
-├── package.json                # Dependencias (Expo 58, React 19, TypeScript)
-├── tsconfig.json               # Configuración estricta de TypeScript
-├── bun.lock                    # Bloqueo de dependencias de alta velocidad
-├── assets/                     # Recursos gráficos (iconos, splash)
+```text
+todo-notes-app/
+├── App.tsx                              # AuthGate (LoginScreen <-> Lista de Tareas), FlatList optimizada
+├── app.json                             # Plugins Expo SDK 58 y textos de permisos en español
+├── bunfig.toml                          # Umbral mínimo de cobertura 80 % (domain/services/api/storage)
+├── eslint.config.js                     # ESLint 9 + eslint-config-expo
+├── Capturas/
+│   ├── 01.png .. 21.png                 # Evidencias preservadas de Unidad 1
+│   └── u2/                              # 18 capturas reales iOS (iPhone) y Android (OnePlus) de Unidad 2
+├── docs/                                # Documentación viva (Brief.md, Domain.md, Stack.md, Plan.md)
 └── src/
-    ├── types/
-    │   └── task.ts             # Interfaces formales (Task, TaskFilter, TaskFormData)
-    ├── storage/
-    │   └── taskStorage.ts      # Capa de abstracción y persistencia AsyncStorage
-    ├── hooks/
-    │   └── useTasks.ts         # Custom Hook con lógica CRUD, filtros y estadísticas
-    └── components/
-        ├── Header.tsx          # Barra superior con métricas y botón de nueva tarea
-        ├── TaskFilterBar.tsx   # Barra de búsqueda y selector de filtros segmentado
-        ├── TaskItem.tsx        # Tarjeta de tarea con toggle, edición y borrado
-        ├── TaskModal.tsx       # Formulario modal para creación y edición
-        └── EmptyState.tsx      # Vistas ilustradas para estados sin datos
+    ├── types/                           # task.ts, auth.ts (User, LocalAccount, Session), errors.ts
+    ├── ports/                           # Interfaces de puertos (permissions, camera, photoFiles, location, storage, secureStore, network, clock, idGenerator, api)
+    ├── domain/                          # validators.ts, taskRules.ts, errors.ts (13 AppErrorCode)
+    ├── adapters/                        # expoPermissions, expoCamera, fileSystemPhotos, expoLocation, asyncStorageStore, secureSessionStore, expoNetwork, systemClock, defaultIdGenerator, http
+    ├── api/                             # authApi.ts (createLocalAuthApi 100 % en dispositivo + createAuthApi para contratos)
+    ├── storage/                         # taskStorage.ts (tasks_v2:<userId>, users_v1, lastUser_v1, migración U1→U2)
+    ├── services/                        # permissionService, photoService, locationService, taskEnricher, authService
+    ├── hooks/                           # useAuth, useTasks, usePermissions
+    ├── screens/                         # LoginScreen.tsx (Iniciar sesión / Crear cuenta local)
+    ├── components/                      # Header, TaskFilterBar, TaskItem (React.memo), TaskModal, EmptyState, PermissionRationale, PhotoPicker, PhotoPreviewModal, LocationBadge
+    ├── composition.ts                   # Composición de adaptadores reales en dispositivo
+    └── __tests__/
+        ├── fakes/                       # 10 dobles de prueba en memoria + reloj simulado (FakeClock)
+        ├── builders/                    # aTask(), aLocation(), aSession()
+        ├── fixtures/                    # Payloads JSON de referencia
+        └── *.test.ts                    # 10 suites TDD (155 pruebas automatizadas)
 ```
 
 ---
 
-## 8. GUÍA DE INSTALACIÓN Y EJECUCIÓN PASO A PASO
+## 3. AUTENTICACIÓN LOCAL, ALMACENAMIENTO SEGURO Y MULTIUSUARIO
 
-### Requisitos Previos
-* **Node.js** v20 o superior (verificado con Node `v22.23.1`).
-* **Bun** instalado en el sistema (`v1.3.11`).
-* Dispositivo móvil con la aplicación **Expo Go** instalada (SDK 58) o simulador de iOS/Android configurado.
+### 3.1. Diseño de seguridad y persistencia local (`R1`–`R4b`)
+* **Sin sesión no hay acceso (`R1`):** `App.tsx` actúa como `AuthGate`; mientras no exista sesión válida en `expo-secure-store`, solo se renderiza `LoginScreen`.
+* **Sesión cifrada en hardware (`R3`, `R4`):** los tokens de sesión (`session_v1`) se guardan exclusivamente en **`expo-secure-store`** (Keychain en iOS / Keystore en Android). Jamás se escriben en `AsyncStorage` (`lastUser_v1` solo almacena `{ id, username, displayName }`) ni en `console.*`.
+* **Registro e inicio de sesión 100 % locales (`CU-01`, `CU-01b`, `R4b`):**
+  * `LoginScreen` incorpora un selector segmentado **«Iniciar sesión» | «Crear cuenta»**, soporte para alias o correo electrónico (`/^[a-zA-Z0-9._@-]{3,30}$/`), contraseña (mínimo 6 caracteres) con botón mostrar/ocultar, validación de coincidencia al confirmar contraseña y detección de usuarios duplicados (*case-insensitive*).
+  * Las cuentas se persisten en `users_v1` inicializando automáticamente las cuentas de prueba `emilys` y `michaelw`.
+* **Aislamiento estricto por `userId` (`R2`):** cada usuario lee y escribe únicamente en `tasks_v2:<userId>` y guarda sus fotografías en `Paths.document/photos/<userId>/`. Al cerrar sesión (`Salir`), se eliminan los tokens de `SecureStore`, pero las tareas, fotos y cuentas locales permanecen intactas.
+* **Migración automática U1 → U2:** al primer ingreso tras actualizar desde la Unidad 1, `taskStorage` detecta la clave heredada `@ipss_todo_app:tasks_v1`, migra las tareas reales (excluyendo semillas `seed-*`) una sola vez y marca `@ipss_todo_app:tasks_v1_migrated`.
 
-### Paso 1: Clonar / Posicionarse en la Carpeta del Proyecto
-```bash
-cd Entrega/todo-notes-app
+### 3.2. Evidencias reales en iPhone (iOS) y OnePlus (Android)
+
+| Escenario validado | iPhone (iOS) | OnePlus (Android) |
+| :--- | :---: | :---: |
+| **Pantalla de Acceso (`LoginScreen`)**<br/>Selector *Iniciar sesión / Crear cuenta*, ojito mostrar contraseña y chips rápidos `emilys (1)` / `michaelw (2)`. | <img src="Capturas/u2/01-login-ios.png" width="220" alt="Login en iPhone" /> | <img src="Capturas/u2/02-login-android.jpg" width="220" alt="Login en Android" /> |
+| **Registro local (`CU-01b`) y cuenta personalizada**<br/>Creación de cuenta `ain.catoni@gmail.com` en dispositivo y espacio aislado propio con badge limpio en cabecera. | <img src="Capturas/u2/04-aislamiento-ain-ios.png" width="220" alt="Cuenta ain.catoni@gmail.com en iPhone" /> | <img src="Capturas/u2/03-registro-android.jpg" width="220" alt="Crear cuenta en Android" /> |
+| **Aislamiento multiusuario (`R2`)**<br/>`emilys` ve solo su tarea con foto y GPS; `michaelw` inicia completamente aislado con 0 tareas. | <img src="Capturas/u2/06-aislamiento-michaelw-ios.png" width="220" alt="Usuario michaelw aislado en iPhone" /> | <img src="Capturas/u2/05-aislamiento-emilys-android.jpg" width="220" alt="Usuario emilys aislado en Android" /> |
+| **Continuidad 100 % Offline / Modo Avión (`R4`)**<br/>Con Modo Avión activo (ícono de avión en barra de estado), el login y la recuperación de tareas, foto y GPS operan sin red. | <img src="Capturas/u2/07-modo-avion-login-ios.png" width="220" alt="Login en Modo Avión iPhone" /> | <img src="Capturas/u2/08-modo-avion-sesion-ios.png" width="220" alt="Sesión activa en Modo Avión iPhone" /> |
+
+---
+
+## 4. GESTIÓN INCREMENTAL DE PERMISOS NATIVOS (`R22`–`R25`)
+
+Los permisos **nunca** se solicitan al abrir la aplicación. El flujo implementado en `permissionService.ts`, `expoPermissions.ts` y `usePermissions.ts` ejecuta un ciclo incremental bajo demanda:
+
+```text
+Acción del usuario (Cámara / Galería / GPS)
+   └─► check() en SO
+        ├─ granted ──────────────────────► Ejecuta recurso inmediatamente
+        ├─ blocked (canAskAgain=false) ──► Modal "Bloqueado" + botón "Abrir ajustes" (Linking.openSettings)
+        └─ undetermined / denied ────────► Modal propio Rationale ("Por qué lo necesitamos")
+                                            ├─ "Ahora no" ──► denied (no invoca diálogo del SO)
+                                            └─ "Continuar" ─► Diálogo nativo del SO
+                                                               ├─ Concedido ──► Ejecuta recurso
+                                                               └─ Denegado ───► Alternativa (galería / sin GPS) o blocked
 ```
 
-### Paso 2: Instalación de Dependencias
-Gracias a Bun, la instalación de todas las dependencias toma menos de 4 segundos:
+### 4.1. Particularidades resueltas entre Android e iOS
+* **Ubicación estrictamente en primer plano (`R25`):** en `app.json` y `expoPermissions.ts` solo se declara y solicita `whenInUse` (*«Mientras la app está en uso»*), evitando permisos en segundo plano.
+* **Doble denegación en Android Expo Go (`R24`):** en Android, cuando el usuario rechaza dos veces un permiso, `Expo Go` puede seguir reportando `undetermined` en lugar de `canAskAgain = false`. Se implementó conteo compartido de denegaciones y sincronización pasiva mediante `AppState` (`active`) al regresar desde Ajustes del sistema.
+* **Modales anidados en iOS:** `PermissionRationale` se renderiza como *overlay* absoluto con `accessibilityViewIsModal={true}` para evitar el bloqueo de modales nativos anidados propio de iOS.
+
+### 4.2. Evidencias de permisos en dispositivos físicos
+
+| Etapa del ciclo de permisos | Captura real | Comportamiento verificado |
+| :--- | :---: | :--- |
+| **Rationale de Ubicación (iPhone)** | <img src="Capturas/u2/09-rationale-ubicacion-ios.png" width="220" alt="Rationale ubicación iOS" /> | Explicación previa en español antes del diálogo de iOS (`R23`). |
+| **Rationale de Cámara (Android)** | <img src="Capturas/u2/10-rationale-camara-android.jpg" width="220" alt="Rationale cámara Android" /> | Explicación previa contextual al pulsar «Tomar foto» (`R22`, `R23`). |
+| **Diálogo Nativo `whenInUse` (Android)** | <img src="Capturas/u2/11-permiso-nativo-android.jpg" width="220" alt="Diálogo nativo ubicación Android" /> | Solicitud exclusivamente en primer plano (*«MIENTRAS LA APP ESTÁ EN USO»*, `R25`). |
+| **Estado Bloqueado → Ajustes (Android)** | <img src="Capturas/u2/12-permiso-bloqueado-android.jpg" width="220" alt="Permisos bloqueados con botón Abrir ajustes" /> | Transición a `Bloqueado` con banner de alerta y acceso directo a Ajustes (`R24`). |
+
+---
+
+## 5. PERIFÉRICO CÁMARA, GALERÍA Y SISTEMA DE ARCHIVOS PRIVADO (`R7`, `R9`)
+
+* **Captura y compresión:** `expoCamera.ts` utiliza `expo-image-picker` con `quality: 0.7` y `allowsEditing: false` para equilibrar nitidez y peso en disco.
+* **Almacenamiento privado por usuario:** `fileSystemPhotos.ts` usa la API moderna de Expo SDK 58 (`File`, `Directory`, `Paths.document`) para copiar cada imagen desde caché temporal hacia `Paths.document/photos/<userId>/<taskId>-<timestamp>.jpg`. El sufijo temporal evita colisiones de caché al reemplazar una foto.
+* **Limpieza automática de archivos (`R7`):** al quitar una foto, reemplazarla por otra o eliminar la tarea completa, `photoService.ts` borra físicamente el archivo anterior del directorio privado.
+* **Degradación elegante (`R9`):** si el permiso de cámara es denegado, la app ofrece inmediatamente **«Elegir de galería»** como alternativa y siempre permite guardar la tarea sin foto.
+
+| Modal con foto y metadatos (iPhone) | Visor ampliado `PhotoPreviewModal` (iPhone) | Tarjeta completada con foto + GPS (Android) |
+| :---: | :---: | :---: |
+| <img src="Capturas/u2/13-foto-modal-ios.png" width="220" alt="Modal editar con foto en iPhone" /> | <img src="Capturas/u2/14-foto-ampliada-ios.png" width="220" alt="Visor ampliado en iPhone" /> | <img src="Capturas/u2/15-foto-gps-tarjeta-android.jpg" width="220" alt="Tarjeta con foto y GPS en Android" /> |
+
+---
+
+## 6. PERIFÉRICO GPS, PRECISIÓN, MAPAS Y OPTIMIZACIÓN (`R6`, `R8`)
+
+### 6.1. Estrategia de captura no bloqueante y precisión
+* **UI Optimista (`taskEnricher.ts`):** al guardar una tarea nueva, esta aparece al instante en la lista sin congelar la interfaz. En paralelo, `locationService.ts` solicita la posición con `Accuracy.Balanced` y un **timeout propio de `10 s`**, enriqueciendo la tarea sin sobrescribir ediciones posteriores ni revivir tareas borradas.
+* **Resiliencia en Android:** `expoLocation.ts` solicita `enableNetworkProviderAsync()` cuando es necesario y aplica fallback con `watchPositionAsync` si `getCurrentPositionAsync` demora en interiores.
+* **Inmutabilidad y degradación (`R6`, `R8`):** la ubicación se captura únicamente al crear la tarea (al editar permanece inmutable con la leyenda *«Registrada al crear (inmutable)»*). Si el GPS está apagado, denegado o excede los `10 s`, la tarea se guarda igualmente con `location = null`.
+* **Enlace directo a Mapas del sistema (`LocationBadge.tsx`):** abre `maps.apple.com` en iOS y `geo:` (Google Maps) en Android con fallback web HTTPS, mostrando además aviso visual *«Baja precisión»* cuando `accuracy > 100 m`.
+
+### 6.2. Tabla comparativa de lecturas GPS reales vs. Mapas del sistema
+
+Mediciones reales capturadas desde la misma ubicación física en Santiago de Chile (interiores residenciales) comparando ambos dispositivos:
+
+| Dispositivo | Sistema Operativo | Coordenadas capturadas | Precisión reportada | Comportamiento observado vs. Mapas del sistema |
+| :--- | :--- | :---: | :---: | :--- |
+| **iPhone** | iOS (Expo Go SDK 58) | `-33.56969, -70.68230` | **`±11 m`** *(rango `±11 m`–`±29 m`)* | Ubicación exacta sobre la calle en Apple Maps; primera fijación en < 2 s. |
+| **OnePlus** | Android (Expo Go SDK 58) | `-33.56952, -70.68230` | **`±12 m`** *(rango `±12 m`–`±14 m`)* | Coincidencia directa en Google Maps (`12399 Los Alamos`, diferencia entre dispositivos < 19 m dentro del radio de precisión). |
+| **OnePlus (GPS apagado)** | Android (prueba `R8`) | `null` (sin bloqueo) | — | La tarea *«Probando gps — Con el GPS apagado»* se crea al instante sin error ni congelamiento. |
+
+| Precisión GPS `±11 m` (iPhone) | GPS apagado vs. activo `±14 m` (Android) | Apertura real en Google Maps (Android) |
+| :---: | :---: | :---: |
+| <img src="Capturas/u2/16-gps-precision-ios.png" width="220" alt="GPS ±11 m en iPhone" /> | <img src="Capturas/u2/17-gps-apagado-y-activo-android.jpg" width="220" alt="GPS apagado vs activo en Android" /> | <img src="Capturas/u2/18-abrir-en-mapa-android.jpg" width="220" alt="Google Maps abierto desde la tarea" /> |
+
+### 6.3. Optimizaciones de rendimiento, accesibilidad y seguridad (Fase 6)
+* **`React.memo` y `FlatList`:** `TaskItem` envuelto en `React.memo`, `keyExtractor` y `renderTaskItem` memoizados con `useCallback`, y `FlatList` configurada con `initialNumToRender={10}`, `maxToRenderPerBatch={10}` y `windowSize={7}`.
+* **Accesibilidad y ergonomía móvil:** todos los controles interactivos (`LoginScreen`, `Header`, `TaskItem`, `PhotoPicker`, `LocationBadge`, `PermissionRationale`, `PhotoPreviewModal`) cumplen áreas táctiles `>= 44 pt` (`minHeight: 44` o `hitSlop`) y poseen `accessibilityRole` y `accessibilityLabel` en español.
+* **Auditoría de seguridad:** cero llamadas a `console.*` en código de producción, cero URLs `http://` fuera de pruebas unitarias que verifican su rechazo, y cero filtraciones de tokens en `AsyncStorage`.
+
+---
+
+## 7. METODOLOGÍA TDD Y PRUEBAS AUTOMATIZADAS
+
+Todo el desarrollo de la Unidad 2 se ejecutó bajo **TDD estricto (`Red → Green → Refactor`)**: antes de implementar cada módulo de dominio, almacenamiento, permisos, cámara, GPS o autenticación, se escribieron las pruebas unitarias sobre los puertos usando dobles en memoria (`FakePermissions`, `FakeCamera`, `FakeLocation`, `FakePhotoFiles`, `FakeKeyValueStore`, `FakeSecureStore`, `FakeNetwork`, `FakeClock`, `SeqIdGenerator`).
+
+### 7.1. Resumen de las 10 suites automatizadas (`155 pruebas`)
+
+| Suite (`src/__tests__/`) | Reglas / Casos cubiertos | Pruebas | Estado |
+| :--- | :--- | :---: | :---: |
+| `taskLogic.test.ts` | Regresión completa de Unidad 1 (CRUD, filtros, búsqueda, métricas) | 13 | ✅ Pass |
+| `validators.test.ts` | `Domain §6` — títulos, descripciones, usuarios/correos (`@`), contraseñas, coordenadas y DTOs | 42 | ✅ Pass |
+| `errors.test.ts` | `Domain §7` — los 13 códigos `AppErrorCode`, mensajes en español y acciones tipadas | 16 | ✅ Pass |
+| `taskStorage.test.ts` | `R2`, `Domain §8` — aislamiento `tasks_v2:<userId>`, migración única U1→U2, `users_v1`, `lastUser_v1` y JSON corrupto | 9 | ✅ Pass |
+| `permissions.test.ts` | `R22`, `R23`, `R24`, `R25` — flujo incremental, rationale, cancelación, doble denegación Android, bloqueo→Ajustes y `whenInUse` | 10 | ✅ Pass |
+| `camera.test.ts` | `R7`, `R9` — cámara, galería, guardado en directorio privado, reemplazo con borrado, cancelación y resultados malformados | 15 | ✅ Pass |
+| `location.test.ts` | `R6`, `R8`, `R25` — coordenadas válidas/inválidas, timeout 10 s con `FakeClock`, baja precisión `> 100 m`, inmutabilidad y `taskEnricher` | 13 | ✅ Pass |
+| `http.test.ts` | `R3` — rechazo `http://`, timeout, mapeo 4xx/5xx, `Authorization` solo a host propio y cero fugas de token en logs | 13 | ✅ Pass |
+| `authApi.test.ts` | `CU-01` — `createLocalAuthApi` 100 % en dispositivo contra `users_v1` y contratos de `login`, `refresh`, `me` | 8 | ✅ Pass |
+| `authService.test.ts` | `R1`–`R4b`, `CU-01`, `CU-01b`, `CU-02` — registro local, duplicados *case-insensitive*, re-login offline, `SecureStore`, refresh y logout | 12 | ✅ Pass |
+| **Total** | **10 archivos de prueba — 527 aserciones `expect()`** | **155** | **✅ 100 % Pass** |
+
+### 7.2. Salida real de `bun test --coverage`, `tsc` y `expo lint`
+
+```text
+$ bun test --coverage
+-----------------------------------|---------|---------|-------------------
+File                               | % Funcs | % Lines | Uncovered Line #s
+-----------------------------------|---------|---------|-------------------
+All files                          |   98.29 |   97.80 |
+ src/api/authApi.ts                |  100.00 |   97.71 | 96,153,214,219,224
+ src/domain/errors.ts              |  100.00 |  100.00 |
+ src/domain/taskRules.ts           |  100.00 |  100.00 |
+ src/domain/validators.ts          |  100.00 |   97.56 | 87-88
+ src/services/authService.ts       |   96.77 |   98.61 | 329-331
+ src/services/locationService.ts   |   90.00 |   97.62 | 60
+ src/services/permissionService.ts |  100.00 |   98.81 |
+ src/services/photoService.ts      |  100.00 |  100.00 |
+ src/services/taskEnricher.ts      |  100.00 |   93.33 | 10
+ src/storage/taskStorage.ts        |   96.15 |   94.41 | 54-57,134-137
+-----------------------------------|---------|---------|-------------------
+ 155 pass | 0 fail | 527 expect() calls | Ran 155 tests across 10 files. [33.00ms]
+
+$ bun --bun x tsc --noEmit   # 0 errores
+$ bun --bun x expo lint      # 0 errores, 0 advertencias
+```
+
+### 7.3. Evidencia de metodología TDD en el historial Git (rama `unidad2`)
+
+Cada fase funcional cuenta con su par de commits `test(...):` seguido de `feat(...):` después de validar en iPhone y Android:
+
+| Commit | Tipo | Fase y alcance |
+| :--- | :---: | :--- |
+| `733eccc` | `chore` | Configuración Expo SDK 58, plugins de permisos en español, ESLint 9 y `bunfig.toml` |
+| `75b802c` | `refactor` | **Fase 0:** extracción de `taskRules.ts` y puertos base sobre la Unidad 1 |
+| `4398136` → `9139c9b` | `test` → `feat` | **Fase 1:** validadores, 13 códigos de error y `taskStorage` v2 aislado con migración U1→U2 |
+| `8375258` → `d111a0d` | `test` → `feat` | **Fase 2:** permisos incrementales, rationale, bloqueo→Ajustes y check específico Android |
+| `dacfb1b` → `b533362` | `test` → `feat` | **Fase 3:** cámara, galería, `expo-file-system` privado y visor ampliado `PhotoPreviewModal` |
+| `2ab4c5f` → `6414658` | `test` → `feat` | **Fase 4:** GPS no bloqueante, timeout 10 s, precisión `±m`, `taskEnricher` y `LocationBadge` |
+| `36d125b` → `5f5ade8` | `test` → `feat` | **Fase 5:** autenticación y registro local (`Crear cuenta`), `expo-secure-store` y multiusuario |
+| `0edc8ca` | `perf` | **Fase 6:** optimización `React.memo`, `FlatList`, áreas táctiles `>= 44 pt` y accesibilidad |
+
+---
+
+## 8. PRUEBAS END-TO-END (E2E) EN DISPOSITIVOS FÍSICOS Y GUÍA DE EJECUCIÓN
+
+### 8.1. Suite de pruebas End-to-End (E2E) ejecutadas en hardware real (iPhone + OnePlus)
+Además de las **155 pruebas unitarias y de integración automatizadas** (`bun test`), cada fase fue validada mediante **pruebas End-to-End (E2E) manuales de punta a punta en dos teléfonos físicos reales** (**iPhone con iOS** y **OnePlus con Android**, ejecutando Expo Go SDK 58), cubriendo flujos completos de usuario, periféricos reales, permisos del sistema operativo y cortes de conectividad:
+
+| ID | Flujo E2E ejecutado (paso a paso) | Resultado verificado y evidencia | iPhone (iOS) | OnePlus (Android) |
+| :---: | :--- | :--- | :---: | :---: |
+| **E2E-01** | **Registro local y re-ingreso (`CU-01b`):** abrir `LoginScreen` → pestaña *Crear cuenta* → registrar `ain.catoni@gmail.com` → entrar automáticamente → cerrar sesión (*Salir*) → volver a iniciar sesión con las credenciales creadas. | Cuenta persistida en `users_v1`, badge limpio en `Header` sin prefijo `@`, ingreso exitoso (`01`, `02`, `03`, `04`). | ✅ | ✅ |
+| **E2E-02** | **Aislamiento multiusuario 3× (`R2`):** crear tarea en `ain.catoni@gmail.com` → salir → entrar con chip rápido `emilys (1)` y crear tarea con foto/GPS → salir → entrar con `michaelw (2)` → volver a `ain.catoni@gmail.com`. | Cada usuario visualiza exclusivamente sus tareas (`tasks_v2:<userId>`) y fotos; `michaelw` inicia con 0 tareas (`04`, `05`, `06`). | ✅ | ✅ |
+| **E2E-03** | **Continuidad 100 % Offline / Modo Avión (`R4`):** activar Modo Avión (sin Wi-Fi ni datos móviles) → cerrar/reabrir e iniciar sesión con `emilys` → consultar tareas, foto privada y coordenadas GPS. | Autenticación local y sesión en `expo-secure-store` operan sin conexión; las fotos privadas y el GPS cargan intactos (`07`, `08`). | ✅ | ✅ |
+| **E2E-04** | **Ciclo completo de permisos incrementales (`R22`–`R25`):** pulsar *Tomar foto*, *Elegir de galería* y *Verificar GPS* → revisar modal *rationale* → probar *Ahora no* (sin abrir diálogo del SO) → denegar permiso (alternativa de galería) → forzar bloqueo (`canAskAgain=false` / doble denegación Android) → abrir Ajustes → reactivar y volver a la app. | Solicitud exclusivamente bajo demanda y en primer plano (`whenInUse`); transición a `Bloqueado` con *Abrir ajustes* y resincronización automática vía `AppState` (`09`, `10`, `11`, `12`). | ✅ | ✅ |
+| **E2E-05** | **Ciclo de vida de fotografía privada (`R7`, `R9`):** capturar foto con cámara y elegir desde galería → verificar miniatura y dimensiones (`3024×4032` iOS / `3456×4608` Android) → ampliar en `PhotoPreviewModal` → editar/quitar foto y eliminar tarea. | Imagen persistida en `Paths.document/photos/<userId>/`, visible en visor a pantalla completa y limpiada físicamente al quitar/borrar (`13`, `14`, `15`). | ✅ | ✅ |
+| **E2E-06** | **GPS no bloqueante, degradación y Mapas (`R6`, `R8`):** crear tarea con GPS activo → validar guardado instantáneo y enriquecimiento con coordenadas + `±m` → editar tarea comprobando inmutabilidad → crear tarea con GPS apagado → pulsar *Abrir en mapa*. | Captura en segundo plano (`±11 m`–`±14 m`), inmutable al editar, degradación limpia a `location = null` con GPS apagado y apertura exacta en Apple Maps / Google Maps (`16`, `17`, `18`). | ✅ | ✅ |
+| **E2E-07** | **Regresión CRUD, búsqueda, filtros y accesibilidad (Fase 6):** crear, completar (checkbox), editar, buscar en vivo (*«Agua»*), filtrar (*Todas / Pendientes / Completadas*) y eliminar con `Alert.alert` nativo. | Actualización inmediata con `React.memo`, áreas táctiles cómodas (`>= 44 pt`), sin cortes en barra de navegación inferior ni en Safe Area (`01`, `04`, `15`). | ✅ | ✅ |
+
+### 8.2. Instalación, ejecución y cuentas de prueba
+
 ```bash
+# 1. Instalar dependencias
 bun install
-```
 
-### Paso 3: Iniciar el Servidor de Desarrollo Expo
-```bash
+# 2. Iniciar servidor Expo (escanear QR con Expo Go SDK 58 en iOS o Android)
 bun start
+
+# 3. Verificar pruebas TDD, cobertura, tipado y linter
+bun test --coverage
+bun --bun x tsc --noEmit
+bun --bun x expo lint
 ```
-*(Alternativamente: `npx expo start`)*
 
-### Paso 4: Visualización de la Aplicación
-1. **En Teléfono Físico (Recomendado):**
-   * Abre la cámara en iOS o la aplicación **Expo Go** en Android.
-   * Escanea el código QR proyectado en la terminal.
-   * La aplicación se compilará y abrirá directamente en el teléfono.
-2. **En Simulador iOS (macOS):**
-   * Con el servidor corriendo en la terminal, presiona la tecla `i`.
-   * Expo iniciará automáticamente el simulador de iPhone configurado en Xcode.
-3. **En Emulador Android:**
-   * Con un emulador de Android Studio activo, presiona la tecla `a`.
-4. **Verificación de Tipado Estricto:**
-   ```bash
-   bun run tsc --noEmit
-   ```
-5. **Ejecución de Pruebas Unitarias Automatizadas (TDD):**
-   ```bash
-   bun test
-   ```
-   *Ejecuta 13 pruebas unitarias en ~10ms validando la lógica completa de creación, validación, mutación inmutable, filtros y estadísticas.*
+**Cuentas pre-sembradas en el dispositivo** (accesibles también con los chips rápidos de `LoginScreen`):
+* **Usuario 1:** `emilys` / `emilyspass`
+* **Usuario 2:** `michaelw` / `michaelwpass`
+* **Registro libre:** pestaña **«Crear cuenta»** para registrar cualquier nuevo alias o correo local.
+
+### 8.3. Limitaciones conocidas
+* En **Expo Go**, los permisos se muestran bajo el nombre de host *Expo Go* y algunas descripciones personalizadas de `app.json` se reflejan al compilar un *development/standalone build* con EAS (`eas build`).
+* Las cuentas creadas con «Crear cuenta» son locales al dispositivo (no se replican entre teléfonos distintos), acorde al alcance offline de APIs internas definido para la Unidad 2.
 
 ---
 
-## 9. EVIDENCIAS DEL PROCESO Y CAPTURAS DE PANTALLA
+## 9. DEMOSTRACIÓN EN VIDEO Y REFERENCIA UNIDAD 1
 
-A continuación se documenta el ciclo de desarrollo completo mediante el registro fotográfico de la preparación del entorno, compilación y validación funcional en el dispositivo iPhone (mediante Duplicación de iPhone / Expo Go SDK 58):
-
-### 9.1. Preparación del Entorno de Desarrollo, CLI y Pruebas TDD
-
-| # | Fase / Acción | Descripción Técnica | Captura |
-| :---: | :--- | :--- | :---: |
-| **01** | Instalación de Watchman | Invocación de Homebrew para instalar el monitor de archivos requerido por Metro. | [Ver Captura](Capturas/01.png) |
-| **02** | Dependencias de Watchman | Descarga e instalación de librerías nativas (`folly`, `edencommon`, `pcre2`). | [Ver Captura](Capturas/02.png) |
-| **03** | Autenticación Expo CLI | Inicio de sesión interactivo en la cuenta de Expo vía `npx expo login`. | [Ver Captura](Capturas/03.png) |
-| **04** | Creación del Proyecto | Inicialización con `bun create expo` seleccionando la plantilla TypeScript y SDK 58 en 3.73s. | [Ver Captura](Capturas/04.png) |
-| **05** | Configuración de Repositorio | Navegación a `todo-notes-app` y verificación del estado del repositorio Git. | [Ver Captura](Capturas/05.png) |
-| **06** | Servidor Metro Bundler | Ejecución de `bun start` desplegando el código QR para vinculación con Expo Go. | [Ver Captura](Capturas/06.png) |
-| **16** | Ejecución Suite TDD | Ejecución de `bun test` validando las 13 pruebas unitarias automatizadas con 0 fallos. | [Ver Captura](Capturas/16.png) |
-
----
-
-### 9.2. Demostración en Video y Funcionamiento en Dispositivo Móvil
-
-#### Registro en Video de la Aplicación en Ejecución
-Se incluye la grabación de pantalla directa desde el iPhone evidenciando la fluidez, la apertura de modales, la edición, eliminación con alerta nativa y persistencia:
-
-* 📱 **Video Demostrativo en iPhone (YouTube):** [https://youtube.com/shorts/k3e_sxzy7Bc](https://youtube.com/shorts/k3e_sxzy7Bc)
-* 🎙️ **Video Explicativo / Defensa Técnica (YouTube):** [https://youtu.be/deRYQaMxEqs](https://youtu.be/deRYQaMxEqs)
-* 💾 **Archivo de Respaldo Local:** [Capturas/demo-video.mp4](Capturas/demo-video.mp4)
----
-#### Demostración Multiplataforma Simultánea (Android + iOS)
-Evidencia directa de la capacidad multiplataforma de React Native y Expo SDK 58, ejecutando exactamente la misma base de código TypeScript en ambos ecosistemas operativos en paralelo:
-
-<p align="center">
-  <img src="Capturas/21.png" alt="Ejecución simultánea en Android e iOS" width="750" />
-  <br/>
-  <em>Captura 21: Emulador Android (Android Studio API 37) y dispositivo iPhone (iOS) ejecutando la aplicación simultáneamente con interfaz adaptativa nativa.</em>
-</p>
-
----
-
-#### Vista Individual de la Aplicación (iPhone / Expo Go SDK 58)
-
-<p align="center">
-  <img src="Capturas/07.png" alt="Pantalla principal de la aplicación en iPhone" width="280" />
-  <br/>
-  <em>Captura 07: Aplicación To-Do ejecutándose en tiempo real en iPhone mediante Expo Go SDK 58 (Cabecera oficial IPSS 2026).</em>
-</p>
-
----
-
-#### Validación del Ciclo CRUD Principal
-
-| Operación Evaluada | Captura | Descripción del Comportamiento Observable |
-| :--- | :---: | :--- |
-| **Editar Tarea (Formulario)** | <img src="Capturas/08.png" width="220" /> | Modal emergente con datos precargados (`title` y `description`), contador de caracteres y botón "Actualizar". |
-| **Tarea Editada y Completada** | <img src="Capturas/09.png" width="220" /> | Lista actualizada con el badge `• editado`, título tachado y contador de pendientes decrementado a 1. |
-| **Crear Tarea (Formulario)** | <img src="Capturas/10.png" width="220" /> | Modal "Nueva Tarea" con campos limpios y foco activo para registrar una nueva nota. |
-| **Inserción Exitosa en Lista** | <img src="Capturas/11.png" width="220" /> | La nueva tarea aparece en la cabecera de la lista, actualizando el total a 4 tareas (2 pendientes). |
-| **Eliminación con Diálogo Nativo** | <img src="Capturas/12.png" width="220" /> | Confirmación de seguridad mediante `Alert.alert` nativo de iOS evitando eliminaciones accidentales. |
-| **Lista tras Eliminación** | <img src="Capturas/13.png" width="220" /> | Tarea de prueba removida de memoria y `AsyncStorage`, restableciendo el contador total a 3. |
-| **Filtro: Solo Pendientes** | <img src="Capturas/14.png" width="220" /> | Pestaña "Pendientes (1)" activa, aislando las tareas que aún requieren atención. |
-| **Filtro: Solo Completadas** | <img src="Capturas/15.png" width="220" /> | Pestaña "Completadas (2)" activa, desplegando exclusivamente las tareas finalizadas con estilo atenuado. |
-
----
-
-### 9.3. Validación de Errores, Robustez y Flexibilidad de UI
-
-| Escenario de Prueba | Captura | Comportamiento y Principio de Usabilidad Demostrado |
-| :--- | :---: | :--- |
-| **Prevención de Error al Crear** | <img src="Capturas/17.png" width="220" /> | Banner de error reactivo *"El título de la tarea es obligatorio"* al intentar guardar sin título. Evita registros vacíos. |
-| **Flexibilidad de Entrada (Sin descripción)** | <img src="Capturas/18.png" width="220" /> | Permite registrar tareas rápidas ingresando solo el título. |
-| **Adaptabilidad Visual de Tarjeta** | <img src="Capturas/19.png" width="220" /> | La tarjeta se ajusta estéticamente sin espacios vacíos innecesarios cuando no hay descripción. |
-| **Prevención de Error al Editar** | <img src="Capturas/20.png" width="220" /> | Si el usuario borra el título en modo edición y presiona "Actualizar", el sistema rechaza la operación e indica el error. |
-
----
-
-## 10. CONCLUSIONES Y PROYECCIÓN A SIGUIENTES UNIDADES
-
-La solución implementada consolida el aprendizaje de la Unidad 1 al materializar una aplicación móvil multiplataforma completa, modular y alineada con los estándares de la industria moderna. El uso de React Native con Expo SDK 58 permitió desacoplar la interfaz de usuario en componentes reutilizables y garantizar un alto estándar de rendimiento.
-
-De acuerdo a las especificaciones del curso, la arquitectura modular implementada en esta entrega deja preparada la aplicación para su futura extensión en las Unidades 2 y 3, facilitando la incorporación de:
-1. Autenticación de usuarios y sincronización con servicios en la nube (Firebase / Supabase).
-2. Conexión con APIs REST externas para persistencia remota.
-3. Notificaciones push locales para recordatorios de tareas programadas.
+* 🎬 **Video Demostrativo Unidad 2 en iPhone (YouTube):** [https://youtube.com/shorts/jEDO7ZyLbK8](https://youtube.com/shorts/jEDO7ZyLbK8)
+* 📦 **Entrega anterior (Unidad 1):** preservada íntegramente en el tag Git [`entrega-u1`](../../tree/entrega-u1) y sus capturas originales en [`Capturas/`](Capturas/).
+  * Video demostrativo U1 en iPhone: [https://youtube.com/shorts/k3e_sxzy7Bc](https://youtube.com/shorts/k3e_sxzy7Bc)
+  * Defensa técnica U1: [https://youtu.be/deRYQaMxEqs](https://youtu.be/deRYQaMxEqs)
