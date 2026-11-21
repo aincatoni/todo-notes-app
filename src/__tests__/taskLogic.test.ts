@@ -1,86 +1,13 @@
 import { describe, it, expect, beforeEach } from 'bun:test';
-import { Task, TaskFilter } from '../types/task';
-
-// Funciones puras de lógica de negocio desacopladas para TDD
-export function validateAndCreateTask(
-  title: string,
-  description: string,
-  existingTasks: Task[]
-): { success: boolean; task?: Task; error?: string } {
-  const trimmedTitle = title.trim();
-  const trimmedDesc = description.trim();
-
-  if (!trimmedTitle) {
-    return { success: false, error: 'El título de la tarea es obligatorio.' };
-  }
-
-  const newTask: Task = {
-    id: `task_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-    title: trimmedTitle,
-    description: trimmedDesc,
-    completed: false,
-    createdAt: Date.now(),
-  };
-
-  return { success: true, task: newTask };
-}
-
-export function updateTask(
-  id: string,
-  title: string,
-  description: string,
-  tasks: Task[]
-): { success: boolean; updatedTasks: Task[]; error?: string } {
-  const trimmedTitle = title.trim();
-  if (!trimmedTitle) {
-    return { success: false, updatedTasks: tasks, error: 'El título no puede estar vacío.' };
-  }
-
-  const updatedTasks = tasks.map((t) =>
-    t.id === id
-      ? { ...t, title: trimmedTitle, description: description.trim(), updatedAt: Date.now() }
-      : t
-  );
-
-  return { success: true, updatedTasks };
-}
-
-export function toggleTaskStatus(id: string, tasks: Task[]): Task[] {
-  return tasks.map((t) =>
-    t.id === id ? { ...t, completed: !t.completed, updatedAt: Date.now() } : t
-  );
-}
-
-export function deleteTaskById(id: string, tasks: Task[]): Task[] {
-  return tasks.filter((t) => t.id !== id);
-}
-
-export function filterTasks(
-  tasks: Task[],
-  filter: TaskFilter,
-  searchQuery: string = ''
-): Task[] {
-  return tasks.filter((t) => {
-    if (filter === 'pending' && t.completed) return false;
-    if (filter === 'completed' && !t.completed) return false;
-
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      const matchTitle = t.title.toLowerCase().includes(q);
-      const matchDesc = t.description.toLowerCase().includes(q);
-      return matchTitle || matchDesc;
-    }
-
-    return true;
-  });
-}
-
-export function computeTaskStats(tasks: Task[]) {
-  const total = tasks.length;
-  const completed = tasks.filter((t) => t.completed).length;
-  const pending = total - completed;
-  return { total, completed, pending };
-}
+import { Task } from '../types/task';
+import {
+  validateAndCreateTask,
+  updateTask,
+  toggleTaskStatus,
+  deleteTaskById,
+  filterTasks,
+  computeTaskStats,
+} from '../domain/taskRules';
 
 describe('TDD: Pruebas Unitarias de Gestión de Tareas (EVA1)', () => {
   let sampleTasks: Task[];

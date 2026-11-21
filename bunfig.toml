@@ -1,0 +1,10 @@
+[test]
+coverageThreshold = 0.8
+coveragePathIgnorePatterns = [
+  "src/adapters/**",
+  "src/hooks/**",
+  "src/screens/**",
+  "src/components/**",
+  "src/__tests__/**",
+  "src/composition.ts"
+]

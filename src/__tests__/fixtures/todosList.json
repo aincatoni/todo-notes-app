@@ -1,0 +1,19 @@
+{
+  "todos": [
+    {
+      "id": 1,
+      "todo": "Do something nice for someone I care about",
+      "completed": false,
+      "userId": 1
+    },
+    {
+      "id": 2,
+      "todo": "Memorize a poem",
+      "completed": true,
+      "userId": 1
+    }
+  ],
+  "total": 2,
+  "skip": 0,
+  "limit": 30
+}

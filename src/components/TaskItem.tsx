@@ -1,20 +1,33 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable, Alert } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Alert, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Task } from '../types/task';
+import { Photo, Task } from '../types/task';
+import { LocationBadge } from './LocationBadge';
 
 interface TaskItemProps {
   task: Task;
   onToggle: (id: string) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
+  onPreviewPhoto?: (photo: Photo) => void;
 }
 
-export const TaskItem: React.FC<TaskItemProps> = ({
+function formatTaskDate(timestamp: number): string {
+  const date = new Date(timestamp);
+  return date.toLocaleDateString('es-CL', {
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+const TaskItemComponent: React.FC<TaskItemProps> = ({
   task,
   onToggle,
   onEdit,
   onDelete,
+  onPreviewPhoto,
 }) => {
   const handleDeletePress = () => {
     Alert.alert(
@@ -31,21 +44,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     );
   };
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp);
-    return date.toLocaleDateString('es-CL', {
-      day: '2-digit',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
-
   return (
     <View style={[styles.card, task.completed && styles.cardCompleted]}>
       {/* Botón de toggle / Checkbox */}
       <Pressable
         onPress={() => onToggle(task.id)}
+        hitSlop={8}
         style={styles.checkboxTouchArea}
         accessibilityRole="checkbox"
         accessibilityState={{ checked: task.completed }}
@@ -78,9 +82,35 @@ export const TaskItem: React.FC<TaskItemProps> = ({
           </Text>
         )}
 
+        {task.photo && (
+          <Pressable
+            onPress={() => onPreviewPhoto?.(task.photo!)}
+            style={({ pressed }) => [
+              styles.photoThumbnailRow,
+              pressed && styles.actionButtonPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={`Ver foto de ${task.title}`}
+          >
+            <Image
+              source={{ uri: task.photo.uri }}
+              style={styles.photoThumbnail}
+            />
+            <Text style={styles.photoLabel}>
+              {task.photo.takenWith === 'camera'
+                ? 'Foto (cámara) • Tocar para ampliar'
+                : 'Foto (galería) • Tocar para ampliar'}
+            </Text>
+          </Pressable>
+        )}
+
+        {task.location && (
+          <LocationBadge location={task.location} compact={true} />
+        )}
+
         <View style={styles.footerRow}>
           <Ionicons name="time-outline" size={12} color="#94A3B8" />
-          <Text style={styles.dateText}>{formatDate(task.createdAt)}</Text>
+          <Text style={styles.dateText}>{formatTaskDate(task.createdAt)}</Text>
           {Boolean(task.updatedAt) && (
             <Text style={styles.editedBadge}>• editado</Text>
           )}
@@ -91,6 +121,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
       <View style={styles.actions}>
         <Pressable
           onPress={() => onEdit(task)}
+          hitSlop={4}
           style={({ pressed }) => [
             styles.actionButton,
             styles.editButton,
@@ -104,6 +135,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
         <Pressable
           onPress={handleDeletePress}
+          hitSlop={4}
           style={({ pressed }) => [
             styles.actionButton,
             styles.deleteButton,
@@ -118,6 +150,9 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     </View>
   );
 };
+
+export const TaskItem = React.memo(TaskItemComponent);
+TaskItem.displayName = 'TaskItem';
 
 const styles = StyleSheet.create({
   card: {
@@ -221,5 +256,28 @@ const styles = StyleSheet.create({
   actionButtonPressed: {
     opacity: 0.65,
     transform: [{ scale: 0.94 }],
+  },
+  photoThumbnailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+    padding: 6,
+    borderRadius: 10,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  photoThumbnail: {
+    width: 48,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: '#E2E8F0',
+  },
+  photoLabel: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
   },
 });

@@ -1,0 +1,10 @@
+{
+  "latitude": -33.45,
+  "longitude": -70.67,
+  "current": {
+    "time": "2026-11-15T15:00",
+    "interval": 900,
+    "temperature_2m": 24.3,
+    "weather_code": 0
+  }
+}
