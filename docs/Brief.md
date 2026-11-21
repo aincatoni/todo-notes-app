@@ -15,7 +15,7 @@
 | Asignatura | Desarrollo de Aplicaciones Móviles |
 | Evaluación | Sumativa Unidad 2 — *"Los recursos son muchos"* (20 % de la nota final, 100 pts, exigencia 60 % = nota 4,0) |
 | Docente | Boris Marcelo Belmar Muñoz |
-| Equipo | Ain Catoni, Pía Alarcón |
+| Equipo | Pía Alarcón, Ain Cortés |
 | Resultado de aprendizaje | Construir aplicaciones móviles que utilicen periféricos y APIs internas del dispositivo (cámara, galería, GPS, almacenamiento seguro y almacenamiento local), gestionando permisos y pruebas automatizadas |
 | Base | Proyecto de la Unidad 1: `todo-notes-app` (Expo SDK 58 + React Native 0.88 + TypeScript + AsyncStorage + `bun test`) |
 

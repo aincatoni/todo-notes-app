@@ -74,7 +74,7 @@ todo-notes-app/
 ├─ app.json                             # Plugins y descripciones de permisos en español
 ├─ bunfig.toml                          # coverageThreshold = 0.8 (domain/services/api/storage)
 ├─ eslint.config.js                     # ESLint 9 + eslint-config-expo
-├─ Capturas/                            # Capturas U1 y U2 (por organizar U2 en Fase 7)
+├─ Capturas/                            # Capturas U1 (01..21) y U2 (Capturas/u2/, 18 capturas)
 ├─ docs/                                # Copia sincronizada de Brief, Domain, Stack y Plan
 └─ src/
    ├─ types/                            # task.ts, auth.ts, errors.ts
@@ -83,13 +83,13 @@ todo-notes-app/
    ├─ adapters/                         # expoCamera, expoLocation, expoPermissions, expoNetwork,
    │                                    # fileSystemPhotos, asyncStorageStore, secureSessionStore,
    │                                    # systemClock, defaultIdGenerator, http
-   ├─ api/                              # authApi.ts
+   ├─ api/                              # authApi.ts (createLocalAuthApi + createAuthApi)
    ├─ storage/                          # taskStorage.ts (tasks por userId, migración U1, users_v1)
    ├─ services/                         # permissionService, photoService, locationService,
    │                                    # taskEnricher, authService
    ├─ hooks/                            # useAuth, useTasks, usePermissions
-   ├─ screens/                          # LoginScreen.tsx (login + registro local en Fase 5)
-   ├─ components/                       # Header, TaskFilterBar, TaskItem, TaskModal, EmptyState,
+   ├─ screens/                          # LoginScreen.tsx (login + registro local)
+   ├─ components/                       # Header, TaskFilterBar, TaskItem (React.memo), TaskModal, EmptyState,
    │                                    # PermissionRationale, PhotoPicker, PhotoPreviewModal, LocationBadge
    ├─ composition.ts                    # Inyección de adaptadores reales
    └─ __tests__/
@@ -98,7 +98,7 @@ todo-notes-app/
       │                                 # SeqIdGenerator, fakeFetch
       ├─ builders/                      # aTask(), aLocation(), aSession()
       ├─ fixtures/                      # JSON de referencia para pruebas de parseo
-      └─ *.test.ts                      # Suites TDD (10 archivos, 147+ pruebas)
+      └─ *.test.ts                      # Suites TDD (10 archivos, 155 pruebas, 97.80 % líneas)
 ```
 
 ## 6. Convenciones de optimización, seguridad y calidad
